@@ -22,6 +22,7 @@ import Team from "./pages/dashboard/Team";
 import HowToUse from "./pages/dashboard/HowToUse";
 import ATScore from "./pages/dashboard/ATScore";
 import LinkedInAnalyzer from "./pages/dashboard/LinkedInAnalyzer";
+import { Pathfinder } from "./pages/dashboard/Pathfinder";
 // Public pages
 import PublicStartups from "./pages/PublicStartups";
 import PublicEmails from "./pages/PublicEmails";
@@ -170,6 +171,7 @@ function App() {
         >
           <Route index element={<Startups />} />
           <Route path="internships" element={<Internships />} />
+          <Route path="pathfinder" element={<Pathfinder />} />
           <Route path="startups" element={<Startups />} />
           <Route path="startups/:id" element={<StartupDetail />} />
           <Route path="emails" element={<EmailTracker />} />
@@ -198,6 +200,7 @@ function App() {
         >
           <Route index element={<Startups />} />
           <Route path="internships" element={<Internships />} />
+          <Route path="pathfinder" element={<Pathfinder />} />
           <Route path="startups" element={<Startups />} />
           <Route path="startups/:id" element={<StartupDetail />} />
           <Route path="emails" element={<EmailTracker />} />

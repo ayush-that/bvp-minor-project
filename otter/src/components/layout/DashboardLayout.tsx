@@ -13,6 +13,7 @@ import {
   X,
   CheckCircle,
   Camera,
+  Compass,
 } from "lucide-react";
 import ThemeToggle from "../ThemeToggle";
 import { NotesTab } from "../notes/NotesTab";
@@ -54,6 +55,7 @@ function DashboardUserAvatar({
 
 const navigation = [
   // { name: "How to Use", href: "/app/how-to-use", icon: HelpCircle },
+  { name: "Pathfinder", href: "/app/pathfinder", icon: Compass },
   { name: "Startups", href: "/app/startups", icon: Building2 },
   { name: "Email Templates", href: "/app/emails", icon: Mail },
   { name: "Profile", href: "/app/settings", icon: Settings },
