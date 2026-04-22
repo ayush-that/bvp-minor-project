@@ -24,3 +24,4 @@ anthropic==0.39.0
 google-generativeai==0.8.3
 aiosqlite==0.20.0
 pypdf==5.1.0
+python-multipart==0.0.26

@@ -8,6 +8,9 @@ from dotenv import load_dotenv
 
 from .routes import scraper
 from .routes import pipeline as pipeline_routes
+from .routes import resume as resume_routes
+from .routes import seeds as seeds_routes
+from .routes import feedback as feedback_routes
 from .config import get_settings
 from .storage import get_db
 
@@ -48,6 +51,9 @@ app.add_middleware(
 # Include routers
 app.include_router(scraper.router, prefix="/api", tags=["scraper"])
 app.include_router(pipeline_routes.router, prefix="/api", tags=["pipeline"])
+app.include_router(resume_routes.router, prefix="/api", tags=["resume"])
+app.include_router(seeds_routes.router, prefix="/api", tags=["seeds"])
+app.include_router(feedback_routes.router, prefix="/api", tags=["feedback"])
 
 
 @app.get("/")
