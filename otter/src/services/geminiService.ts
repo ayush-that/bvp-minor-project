@@ -1,170 +1,14 @@
 import { UserResumeData } from "@/types";
-
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_KEY;
-const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent";
-const GEMINI_IMAGE_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent";
-
-/**
- * parse resume file (pdf/docx/txt) and extract structured data via gemini
- * @param file - uploaded resume file
- * @returns parsed resume data
- */
-export async function parseResumeWithGemini(file: File): Promise<{
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phone?: string;
-  linkedin?: string;
-  github?: string;
-  portfolio?: string;
-  education?: string;
-  experienceYears?: number;
-  skills?: string[];
-  additionalInfo?: string;
-}> {
-  if (!GEMINI_API_KEY) {
-    throw new Error("Gemini API key not configured");
-  }
-
-  try {
-    // read file as text (pdf parsing would need additional lib, start w/ txt)
-    let resumeText = "";
-
-    if (file.type === "text/plain") {
-      resumeText = await file.text();
-    } else if (
-      file.type === "application/pdf" ||
-      file.name.toLowerCase().endsWith(".pdf")
-    ) {
-      // for pdf, use file reader to get base64
-      const base64 = await fileToBase64(file);
-
-      // use gemini vision api for pdf
-      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  inline_data: {
-                    mime_type: "application/pdf",
-                    data: base64.split(",")[1], // remove data:...;base64, prefix
-                  },
-                },
-                {
-                  text: `Extract all information from this resume and return it as a JSON object with the following structure:
-{
-  "firstName": "...",
-  "lastName": "...",
-  "email": "...",
-  "phone": "...",
-  "linkedin": "...",
-  "github": "...",
-  "portfolio": "...",
-  "education": "...",
-  "experienceYears": number,
-  "skills": ["skill1", "skill2"],
-  "additionalInfo": "projects, achievements, summary, etc."
-}
-
-Be thorough and extract ALL relevant information. For experienceYears, estimate based on work history. Return ONLY valid JSON, no other text.`,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 2048,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const generatedText =
-        data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-      return parseJsonResponse(generatedText);
-    } else {
-      // for other text-based formats
-      resumeText = await file.text();
-    }
-
-    // if we have text, parse it
-    if (resumeText) {
-      const prompt = `Extract all information from this resume and return it as a JSON object with the following structure:
-{
-  "firstName": "...",
-  "lastName": "...",
-  "email": "...",
-  "phone": "...",
-  "linkedin": "...",
-  "github": "...",
-  "portfolio": "...",
-  "education": "...",
-  "experienceYears": number,
-  "skills": ["skill1", "skill2"],
-  "additionalInfo": "projects, achievements, summary, etc."
-}
-
-Be thorough and extract ALL relevant information. For experienceYears, estimate based on work history. Return ONLY valid JSON, no other text.
-
-RESUME TEXT:
-${resumeText}`;
-
-      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 2048,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const generatedText =
-        data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-      return parseJsonResponse(generatedText);
-    }
-
-    throw new Error("Could not read file content");
-  } catch (error) {
-    console.error("Resume parsing error:", error);
-    throw error instanceof Error ? error : new Error("Failed to parse resume");
-  }
-}
+import {
+  openrouterChat,
+  openrouterChatWithPDF,
+  openrouterImageGen,
+} from "./openrouter";
 
 /**
- * helper to convert file to base64
+ * helper to convert file to base64 data url
  */
-function fileToBase64(file: File): Promise<string> {
+export function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
@@ -174,7 +18,7 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 /**
- * helper to parse json from gemini response (might have markdown)
+ * helper to parse json from llm response (might have markdown)
  */
 function parseJsonResponse(text: string): any {
   try {
@@ -243,7 +87,72 @@ function parseJsonResponse(text: string): any {
 }
 
 /**
- * gen typst resume from template + user data via gemini
+ * parse resume file (pdf/docx/txt) and extract structured data
+ * @param file - uploaded resume file
+ * @returns parsed resume data
+ */
+export async function parseResumeWithGemini(file: File): Promise<{
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  linkedin?: string;
+  github?: string;
+  portfolio?: string;
+  education?: string;
+  experienceYears?: number;
+  skills?: string[];
+  additionalInfo?: string;
+}> {
+  try {
+    const jsonPrompt = `Extract all information from this resume and return it as a JSON object with the following structure:
+{
+  "firstName": "...",
+  "lastName": "...",
+  "email": "...",
+  "phone": "...",
+  "linkedin": "...",
+  "github": "...",
+  "portfolio": "...",
+  "education": "...",
+  "experienceYears": number,
+  "skills": ["skill1", "skill2"],
+  "additionalInfo": "projects, achievements, summary, etc."
+}
+
+Be thorough and extract ALL relevant information. For experienceYears, estimate based on work history. Return ONLY valid JSON, no other text.`;
+
+    if (
+      file.type === "application/pdf" ||
+      file.name.toLowerCase().endsWith(".pdf")
+    ) {
+      const base64 = await fileToBase64(file);
+      const generatedText = await openrouterChatWithPDF({
+        prompt: jsonPrompt,
+        pdfBase64: base64.split(",")[1],
+        filename: file.name,
+      });
+      return parseJsonResponse(generatedText);
+    }
+
+    // text-based formats
+    const resumeText = await file.text();
+    if (!resumeText) {
+      throw new Error("Could not read file content");
+    }
+
+    const generatedText = await openrouterChat({
+      prompt: `${jsonPrompt}\n\nRESUME TEXT:\n${resumeText}`,
+    });
+    return parseJsonResponse(generatedText);
+  } catch (error) {
+    console.error("Resume parsing error:", error);
+    throw error instanceof Error ? error : new Error("Failed to parse resume");
+  }
+}
+
+/**
+ * gen typst resume from template + user data
  * @param templateContent - base typst template
  * @param userData - user info from db
  * @returns populated typst src
@@ -252,10 +161,6 @@ export async function generateTypstResume(
   templateContent: string,
   userData: UserResumeData
 ): Promise<string> {
-  if (!GEMINI_API_KEY) {
-    throw new Error("Gemini API key not configured");
-  }
-
   // fmt skills as csv if arr
   const formattedData = {
     ...userData,
@@ -265,7 +170,7 @@ export async function generateTypstResume(
   };
 
   // simple prompt - just fill in the template
-  const prompt = `Fill in this Typst resume template with the user's data. Replace all placeholders with the given values. If a field is empty, omit that section. Return ONLY the completed Typst code, no explanations or markdown. Keep imports wherever applicable. 
+  const prompt = `Fill in this Typst resume template with the user's data. Replace all placeholders with the given values. If a field is empty, omit that section. Return ONLY the completed Typst code, no explanations or markdown. Keep imports wherever applicable.
 
 TEMPLATE:
 ${templateContent}
@@ -284,37 +189,14 @@ CRITICAL RULES:
 - Make sure to check and give correct working typst code, avoiding errors in imports, undisclosed delimiters, missing imports, etc.`;
 
   try {
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.2,
-          maxOutputTokens: 8192,
-        },
-      }),
+    const generatedText = await openrouterChat({
+      prompt,
+      temperature: 0.2,
+      maxTokens: 8192,
     });
 
-    if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
     if (!generatedText) {
-      throw new Error("No response from Gemini API");
+      throw new Error("No response from OpenRouter API");
     }
 
     // clean md code blocks
@@ -355,7 +237,7 @@ CRITICAL RULES:
 
     return cleanedText.trim();
   } catch (error) {
-    console.error("Gemini API error:", error);
+    console.error("OpenRouter API error:", error);
     throw error instanceof Error
       ? error
       : new Error("Failed to generate resume");
@@ -363,7 +245,7 @@ CRITICAL RULES:
 }
 
 /**
- * analyze linkedin profile and give rating/advice via gemini
+ * analyze linkedin profile and give rating/advice
  * @param profileUrl - linkedin profile url/text
  * @returns linkedin analysis w/ score and advice
  */
@@ -384,10 +266,6 @@ export async function analyzeLinkedInProfile(profileUrl: string): Promise<{
     engagement: string;
   };
 }> {
-  if (!GEMINI_API_KEY) {
-    throw new Error("Gemini API key not configured");
-  }
-
   try {
     const prompt = `You are a LinkedIn profile optimization expert and career coach. Analyze this LinkedIn profile URL/information CRITICALLY and provide HARSH, HONEST feedback in the following categories (each out of 20 points):
 1. Profile Completeness (20): Photo, banner, contact info, about section, featured content. Be STRICT - missing elements lose points.
@@ -423,34 +301,11 @@ Be brutally honest and provide SPECIFIC, ACTIONABLE advice. Return ONLY valid JS
 LINKEDIN PROFILE:
 ${profileUrl}`;
 
-    const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.4,
-          maxOutputTokens: 2048,
-        },
-      }),
+    const generatedText = await openrouterChat({
+      prompt,
+      temperature: 0.4,
+      maxTokens: 2048,
     });
-
-    if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
 
     const scores = parseJsonResponse(generatedText);
 
@@ -473,22 +328,17 @@ ${profileUrl}`;
 }
 
 /**
- * gen professional headshot from uploaded photo via gemini img gen
+ * gen professional headshot from uploaded photo
  * @param file - uploaded photo file
- * @returns base64 enhanced headshot img
+ * @returns data url of enhanced headshot img
  */
 export async function generateProfessionalHeadshot(
   file: File
 ): Promise<string> {
-  if (!GEMINI_API_KEY) {
-    throw new Error("Gemini API key not configured");
-  }
-
   try {
     // conv img to base64
     const base64 = await fileToBase64(file);
 
-    // use gemini-2.5-flash-image for native img gen (aka nano banana)
     const prompt = `Transform this photo into a professional LinkedIn headshot. Make the following improvements:
 - Replace the background with plain white.
 - Enhance the lighting to be flattering and professional (soft, even lighting on the face)
@@ -499,62 +349,17 @@ export async function generateProfessionalHeadshot(
 - Create a polished, corporate-ready appearance suitable for LinkedIn
 Keep the person's features natural and authentic while making the photo look professional and polished.`;
 
-    const response = await fetch(`${GEMINI_IMAGE_URL}?key=${GEMINI_API_KEY}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: prompt,
-              },
-              {
-                inline_data: {
-                  mime_type: file.type,
-                  data: base64.split(",")[1], // rm data:...;base64, prefix
-                },
-              },
-            ],
-          },
-        ],
-        generationConfig: {
-          temperature: 0.4,
-          responseModalities: ["Image"],
-        },
-      }),
+    const generatedImage = await openrouterImageGen({
+      prompt,
+      inputImageBase64: base64.split(",")[1],
+      inputImageMime: file.type,
     });
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      console.error("Gemini API error:", errorData);
-      throw new Error(`Gemini API error: ${response.statusText}`);
-    }
+    console.log("==== HEADSHOT GENERATED ====");
+    console.log("Successfully generated professional headshot");
+    console.log("==== END ====");
 
-    const data = await response.json();
-
-    // gemini returns img in parts as inlineData or inline_data
-    for (const part of data.candidates?.[0]?.content?.parts || []) {
-      // chk both camelCase and snake_case (api can return either)
-      const imageData = part.inlineData || part.inline_data;
-      if (imageData) {
-        // return as data url for img display
-        const mimeType = imageData.mimeType || imageData.mime_type;
-        const base64Data = imageData.data;
-        const generatedImage = `data:${mimeType};base64,${base64Data}`;
-        console.log("==== HEADSHOT GENERATED ====");
-        console.log("Successfully generated professional headshot");
-        console.log("==== END ====");
-        return generatedImage;
-      }
-      if (part.text) {
-        console.log("Text response:", part.text);
-      }
-    }
-
-    throw new Error("No image generated in response");
+    return generatedImage;
   } catch (error) {
     console.error("Headshot generation error:", error);
     throw error instanceof Error
@@ -564,7 +369,7 @@ Keep the person's features natural and authentic while making the photo look pro
 }
 
 /**
- * score resume w/ ats criteria via gemini
+ * score resume w/ ats criteria
  * @param file - uploaded resume file
  * @returns ats scores breakdown
  */
@@ -583,185 +388,75 @@ export async function scoreResumeATS(file: File): Promise<{
     skills: string;
   };
 }> {
-  if (!GEMINI_API_KEY) {
-    throw new Error("Gemini API key not configured");
-  }
-
   try {
-    let resumeContent = "";
+    const atsPrompt = `You are a STRICT ATS (Applicant Tracking System) evaluator and hiring manager. Analyze this resume CRITICALLY and score it harshly in the following categories (each out of 20 points):
 
-    // handle pdf files
+1. Keyword Relevance (20): Industry keywords, tech stack, job-relevant terms. Be HARSH - most resumes lack enough keywords.
+2. Formatting (20): Clean structure, ATS-friendly layout, proper sections. PENALIZE heavily for any formatting issues, missing sections, or ATS-unfriendly elements.
+3. Clarity (20): Clear language, concise bullets, easy to scan. Be CRITICAL - vague statements and fluff should lose points.
+4. Experience (20): Achievements, metrics, impact, relevance. NO MERCY - lacking quantifiable metrics is a major issue.
+5. Skills (20): Technical skills, relevant competencies, certifications. Be TOUGH - generic or outdated skills should be called out.
+
+SCORING GUIDELINES:
+- Be STRICT and CRITICAL in your evaluation
+- Don't give high scores easily - most resumes are average at best
+- Point out EVERY flaw and weakness without sugarcoating
+- Use direct, blunt language in feedback
+- Scores above 15/20 should be RARE and only for exceptional quality
+
+Return a JSON object with scores and harsh, direct feedback for each category:
+{
+  "keywordRelevance": number (0-20),
+  "formatting": number (0-20),
+  "clarity": number (0-20),
+  "experience": number (0-20),
+  "skills": number (0-20),
+  "feedback": {
+    "keywordRelevance": "harsh, direct feedback pointing out what's missing or weak...",
+    "formatting": "critical feedback on formatting issues...",
+    "clarity": "blunt assessment of clarity problems...",
+    "experience": "tough critique of experience section...",
+    "skills": "harsh evaluation of skills listed..."
+  }
+}
+
+Be brutally honest and don't hold back. Return ONLY valid JSON, no markdown.`;
+
+    let generatedText: string;
+
     if (
       file.type === "application/pdf" ||
       file.name.toLowerCase().endsWith(".pdf")
     ) {
       const base64 = await fileToBase64(file);
-
-      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  inline_data: {
-                    mime_type: "application/pdf",
-                    data: base64.split(",")[1],
-                  },
-                },
-                {
-                  text: `You are a STRICT ATS (Applicant Tracking System) evaluator and hiring manager. Analyze this resume CRITICALLY and score it harshly in the following categories (each out of 20 points):
-
-1. Keyword Relevance (20): Industry keywords, tech stack, job-relevant terms. Be HARSH - most resumes lack enough keywords.
-2. Formatting (20): Clean structure, ATS-friendly layout, proper sections. PENALIZE heavily for any formatting issues, missing sections, or ATS-unfriendly elements.
-3. Clarity (20): Clear language, concise bullets, easy to scan. Be CRITICAL - vague statements and fluff should lose points.
-4. Experience (20): Achievements, metrics, impact, relevance. NO MERCY - lacking quantifiable metrics is a major issue.
-5. Skills (20): Technical skills, relevant competencies, certifications. Be TOUGH - generic or outdated skills should be called out.
-
-SCORING GUIDELINES:
-- Be STRICT and CRITICAL in your evaluation
-- Don't give high scores easily - most resumes are average at best
-- Point out EVERY flaw and weakness without sugarcoating
-- Use direct, blunt language in feedback
-- Scores above 15/20 should be RARE and only for exceptional quality
-
-Return a JSON object with scores and harsh, direct feedback for each category:
-{
-  "keywordRelevance": number (0-20),
-  "formatting": number (0-20),
-  "clarity": number (0-20),
-  "experience": number (0-20),
-  "skills": number (0-20),
-  "feedback": {
-    "keywordRelevance": "harsh, direct feedback pointing out what's missing or weak...",
-    "formatting": "critical feedback on formatting issues...",
-    "clarity": "blunt assessment of clarity problems...",
-    "experience": "tough critique of experience section...",
-    "skills": "harsh evaluation of skills listed..."
-  }
-}
-
-Be brutally honest and don't hold back. Return ONLY valid JSON, no markdown.`,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 2048,
-          },
-        }),
+      generatedText = await openrouterChatWithPDF({
+        prompt: atsPrompt,
+        pdfBase64: base64.split(",")[1],
+        filename: file.name,
+        temperature: 0.4,
       });
-
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const generatedText =
-        data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-      const scores = parseJsonResponse(generatedText);
-
-      // calc total score
-      const totalScore =
-        scores.keywordRelevance +
-        scores.formatting +
-        scores.clarity +
-        scores.experience +
-        scores.skills;
-
-      return { ...scores, totalScore };
     } else {
-      // handle txt files
-      resumeContent = await file.text();
-    }
-
-    // txt-based scoring
-    if (resumeContent) {
-      const prompt = `You are a STRICT ATS (Applicant Tracking System) evaluator and hiring manager. Analyze this resume CRITICALLY and score it harshly in the following categories (each out of 20 points):
-
-1. Keyword Relevance (20): Industry keywords, tech stack, job-relevant terms. Be HARSH - most resumes lack enough keywords.
-2. Formatting (20): Clean structure, ATS-friendly layout, proper sections. PENALIZE heavily for any formatting issues, missing sections, or ATS-unfriendly elements.
-3. Clarity (20): Clear language, concise bullets, easy to scan. Be CRITICAL - vague statements and fluff should lose points.
-4. Experience (20): Achievements, metrics, impact, relevance. NO MERCY - lacking quantifiable metrics is a major issue.
-5. Skills (20): Technical skills, relevant competencies, certifications. Be TOUGH - generic or outdated skills should be called out.
-
-SCORING GUIDELINES:
-- Be STRICT and CRITICAL in your evaluation
-- Don't give high scores easily - most resumes are average at best
-- Point out EVERY flaw and weakness without sugarcoating
-- Use direct, blunt language in feedback
-- Scores above 15/20 should be RARE and only for exceptional quality
-
-Return a JSON object with scores and harsh, direct feedback for each category:
-{
-  "keywordRelevance": number (0-20),
-  "formatting": number (0-20),
-  "clarity": number (0-20),
-  "experience": number (0-20),
-  "skills": number (0-20),
-  "feedback": {
-    "keywordRelevance": "harsh, direct feedback pointing out what's missing or weak...",
-    "formatting": "critical feedback on formatting issues...",
-    "clarity": "blunt assessment of clarity problems...",
-    "experience": "tough critique of experience section...",
-    "skills": "harsh evaluation of skills listed..."
-  }
-}
-
-Be brutally honest and don't hold back. Return ONLY valid JSON, no markdown.
-
-RESUME:
-${resumeContent}`;
-
-      const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [
-                {
-                  text: prompt,
-                },
-              ],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: 2048,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Gemini API error: ${response.statusText}`);
+      const resumeContent = await file.text();
+      if (!resumeContent) {
+        throw new Error("Could not read file content");
       }
-
-      const data = await response.json();
-      const generatedText =
-        data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-
-      const scores = parseJsonResponse(generatedText);
-
-      // calc total score
-      const totalScore =
-        scores.keywordRelevance +
-        scores.formatting +
-        scores.clarity +
-        scores.experience +
-        scores.skills;
-
-      return { ...scores, totalScore };
+      generatedText = await openrouterChat({
+        prompt: `${atsPrompt}\n\nRESUME:\n${resumeContent}`,
+        temperature: 0.4,
+      });
     }
 
-    throw new Error("Could not read file content");
+    const scores = parseJsonResponse(generatedText);
+
+    // calc total score
+    const totalScore =
+      scores.keywordRelevance +
+      scores.formatting +
+      scores.clarity +
+      scores.experience +
+      scores.skills;
+
+    return { ...scores, totalScore };
   } catch (error) {
     console.error("ATS scoring error:", error);
     throw error instanceof Error ? error : new Error("Failed to score resume");

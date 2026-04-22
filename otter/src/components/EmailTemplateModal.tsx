@@ -23,6 +23,7 @@ import { supabase } from "@/utils/supabase";
 import { EmailTemplate, UserProfile, StartupEmployee } from "@/types";
 import { Link } from "react-router-dom";
 import { MOCK_USER } from "@/utils/mockUser";
+import { openrouterChat, openrouterChatWithPDF } from "@/services/openrouter";
 
 interface EmailTemplateModalProps {
   open: boolean;
@@ -165,146 +166,54 @@ export function EmailTemplateModal({
     }
   };
 
-  // upload file to gemini and get file uri
-  const uploadFileToGemini = async (file: File): Promise<string> => {
-    const geminiKey = import.meta.env.VITE_GEMINI_KEY;
-    if (!geminiKey) {
-      throw new Error("gemini api key not found");
-    }
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const uploadResponse = await fetch(
-      `https://generativelanguage.googleapis.com/upload/v1beta/files?key=${geminiKey}`,
-      {
-        method: "POST",
-        body: formData,
-      }
-    );
-
-    if (!uploadResponse.ok) {
-      throw new Error(`file upload failed: ${uploadResponse.statusText}`);
-    }
-
-    const uploadData = await uploadResponse.json();
-    return uploadData.file.uri;
-  };
-
-  // gemini ai integration for resume parsing - supports pdfs directly
+  // parse resume via openrouter - supports pdfs inline (no separate upload)
   const parseResumeWithGemini = async (file: File): Promise<string> => {
-    const geminiKey = import.meta.env.VITE_GEMINI_KEY;
-    if (!geminiKey) {
-      throw new Error("gemini api key not found");
-    }
-
     try {
+      const resumePrompt =
+        "analyze this resume and create a structured professional summary. start with the person's full name on the first line, then provide a concise summary highlighting key skills, experience, achievements, and contact information including email, phone, and any relevant urls/links. focus on internship-relevant details. respond with plaintext and only what is necessary.";
+
       const fileType = file.type.toLowerCase();
 
       if (fileType === "application/pdf") {
-        // upload pdf to gemini and analyze directly
-        console.log("Uploading PDF to Gemini...");
-        const fileUri = await uploadFileToGemini(file);
-        console.log("PDF uploaded, analyzing...");
+        console.log("Sending PDF to OpenRouter inline...");
+        const reader = new FileReader();
+        const base64: string = await new Promise((resolve, reject) => {
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
 
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiKey}`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              contents: [
-                {
-                  parts: [
-                    {
-                      text: "analyze this resume and create a structured professional summary. start with the person's full name on the first line, then provide a concise summary highlighting key skills, experience, achievements, and contact information including email, phone, and any relevant urls/links. focus on internship-relevant details. respond with plaintext and only what is necessary.",
-                    },
-                    {
-                      fileData: {
-                        mimeType: file.type,
-                        fileUri: fileUri,
-                      },
-                    },
-                  ],
-                },
-              ],
-              generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 1400,
-              },
-            }),
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`gemini api error: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        const summary = await openrouterChatWithPDF({
+          prompt: resumePrompt,
+          pdfBase64: base64.split(",")[1],
+          filename: file.name,
+          temperature: 0.7,
+          maxTokens: 1400,
+        });
 
         if (!summary) {
-          throw new Error("no summary generated from gemini");
+          throw new Error("no summary generated");
         }
 
         console.log("Generated summary:", summary);
         return summary.trim();
       } else {
         // for text files, read and send as text
-        return new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = async (e) => {
-            try {
-              const text = e.target?.result as string;
-              console.log("Extracted text length:", text.length);
+        const text = await file.text();
+        console.log("Extracted text length:", text.length);
 
-              const response = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiKey}`,
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                  body: JSON.stringify({
-                    contents: [
-                      {
-                        parts: [
-                          {
-                            text: `analyze this resume and create a structured professional summary. start with the person's full name on the first line, then provide a concise summary highlighting key skills, experience, achievements, and contact information including email, phone, and any relevant urls/links. focus on internship-relevant details. respond with plaintext and only what is necessary:\n\n${text}`,
-                          },
-                        ],
-                      },
-                    ],
-                    generationConfig: {
-                      temperature: 0.7,
-                      maxOutputTokens: 1400,
-                    },
-                  }),
-                }
-              );
-
-              if (!response.ok) {
-                throw new Error(`gemini api error: ${response.statusText}`);
-              }
-
-              const data = await response.json();
-              const summary = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-              if (!summary) {
-                throw new Error("no summary generated from gemini");
-              }
-
-              console.log("Generated summary:", summary);
-              resolve(summary.trim());
-            } catch (error) {
-              reject(error);
-            }
-          };
-          reader.onerror = () => reject(new Error("failed to read file"));
-          reader.readAsText(file);
+        const summary = await openrouterChat({
+          prompt: `${resumePrompt}:\n\n${text}`,
+          temperature: 0.7,
+          maxTokens: 1400,
         });
+
+        if (!summary) {
+          throw new Error("no summary generated");
+        }
+
+        console.log("Generated summary:", summary);
+        return summary.trim();
       }
     } catch (error) {
       console.error("Error in parseResumeWithGemini:", error);
@@ -342,7 +251,7 @@ export function EmailTemplateModal({
     }
   };
 
-  // personalize email template with gemini - includes auth user details
+  // personalize email template via openrouter - includes auth user details
   const personalizeEmail = async (template: EmailTemplate) => {
     console.log("Personalizing email - userProfile:", userProfile);
     console.log("Resume text available:", !!userProfile?.resume_text);
@@ -351,9 +260,6 @@ export function EmailTemplateModal({
       console.log("No resume text found, returning template as-is");
       return template.template_content;
     }
-
-    const geminiKey = import.meta.env.VITE_GEMINI_KEY;
-    if (!geminiKey) return template.template_content;
 
     // use authenticated user's name from auth context, fallback to email prefix
     const senderName = user?.name || user?.email?.split("@")[0] || "Student";
@@ -368,47 +274,21 @@ export function EmailTemplateModal({
     try {
       setLoading(true);
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiKey}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: `personalize this email template using the user's details and resume info. DO NOT CHANGE THE TEMPLATE MUCH, EDIT ONLY THE NAMES AND SPECIFIC DETAILS. KEEP FORMAT SAME. highlights relevant experience and shows genuine interest.\n\nemail template:\n${
-                      template.template_content
-                    }\n\nsender details:\nname: ${senderName}\nemail: ${senderEmail}\n\nrecipient details:\nname: ${
-                      employee.name
-                    }\ncompany: ${startupName}\n what the company does: ${startupDescription}\nrole: ${
-                      employee.role || "team member"
-                    }\nemail: ${employee.email}\n\nresume summary:\n${
-                      userProfile.resume_text
-                    }\n\ninstructions:\n- replace [Your Name] or similar placeholders with "${senderName}"\n- replace [Your Email] with "${senderEmail}"\n- replace [Name] or [Recipient Name] with "${
-                      employee.name
-                    }"\n- replace [Company] with "${startupName}"\n- personalize content using specific skills and experiences from resume\n- maintain professional tone while showing enthusiasm\n- include relevant projects, skills, or achievements that match the role.  respond with plaintext and only what is necessary.`,
-                  },
-                ],
-              },
-            ],
-            generationConfig: {
-              temperature: 0.8,
-              maxOutputTokens: 1500,
-            },
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`gemini api error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const personalizedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const personalizedText = await openrouterChat({
+        prompt: `personalize this email template using the user's details and resume info. DO NOT CHANGE THE TEMPLATE MUCH, EDIT ONLY THE NAMES AND SPECIFIC DETAILS. KEEP FORMAT SAME. highlights relevant experience and shows genuine interest.\n\nemail template:\n${
+          template.template_content
+        }\n\nsender details:\nname: ${senderName}\nemail: ${senderEmail}\n\nrecipient details:\nname: ${
+          employee.name
+        }\ncompany: ${startupName}\n what the company does: ${startupDescription}\nrole: ${
+          employee.role || "team member"
+        }\nemail: ${employee.email}\n\nresume summary:\n${
+          userProfile.resume_text
+        }\n\ninstructions:\n- replace [Your Name] or similar placeholders with "${senderName}"\n- replace [Your Email] with "${senderEmail}"\n- replace [Name] or [Recipient Name] with "${
+          employee.name
+        }"\n- replace [Company] with "${startupName}"\n- personalize content using specific skills and experiences from resume\n- maintain professional tone while showing enthusiasm\n- include relevant projects, skills, or achievements that match the role.  respond with plaintext and only what is necessary.`,
+        temperature: 0.8,
+        maxTokens: 1500,
+      });
 
       return personalizedText?.trim() || template.template_content;
     } catch (error) {

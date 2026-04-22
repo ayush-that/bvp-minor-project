@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { UserProfile, Domain } from "@/types";
 import { parseResumeWithGemini } from "@/services/geminiService";
+import { openrouterChat } from "@/services/openrouter";
 import { MOCK_USER } from "@/utils/mockUser";
 
 const domains: Domain[] = [
@@ -171,18 +172,12 @@ export function Settings() {
     }
   };
 
-  // gemini ai integration to update resume_text
+  // openrouter ai integration to update resume_text
   const updateResumeWithGemini = async (
     profileData: ProfileFormData,
     userSkills: string[],
     domainPrefs: string[]
   ) => {
-    const geminiKey = import.meta.env.VITE_GEMINI_KEY;
-    if (!geminiKey) {
-      console.warn("gemini api key not found");
-      return null;
-    }
-
     try {
       setUpdatingResume(true);
 
@@ -200,41 +195,15 @@ preferred domains: ${domainPrefs.join(", ")}
 additional info: ${profileData.additional_info}
       `.trim();
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${geminiKey}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: `create a professional resume summary from this profile information. format it as a structured summary that highlights key skills, experience, achievements, and contact information. make it suitable for internship applications and emphasize relevant technical skills and domain expertise. respond with plaintext and only what is necessary:\n\n${profileSummary}`,
-                  },
-                ],
-              },
-            ],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 1400,
-            },
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`gemini api err: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      const resumeText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const resumeText = await openrouterChat({
+        prompt: `create a professional resume summary from this profile information. format it as a structured summary that highlights key skills, experience, achievements, and contact information. make it suitable for internship applications and emphasize relevant technical skills and domain expertise. respond with plaintext and only what is necessary:\n\n${profileSummary}`,
+        temperature: 0.7,
+        maxTokens: 1400,
+      });
 
       return resumeText?.trim() || null;
     } catch (error) {
-      console.error("err updating resume with gemini:", error);
+      console.error("err updating resume with openrouter:", error);
       return null;
     } finally {
       setUpdatingResume(false);
