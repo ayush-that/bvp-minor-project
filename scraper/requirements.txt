@@ -1,0 +1,21 @@
+# Python 3.12 requirements for Firecrawl Scraper
+
+# HTTP requests
+requests==2.31.0
+
+# Environment variable management
+python-dotenv==1.0.1
+
+# OpenAI API client
+openai==1.54.3
+
+# Pin compatible httpx version for openai
+httpx==0.27.2
+httpcore==1.0.6
+
+# FastAPI and server
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic==2.10.3
+pydantic-settings==2.6.1
+

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-PV6QC25QPC"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag() {
+      dataLayer.push(arguments);
+    }
+    gtag("js", new Date());
+
+    gtag("config", "G-PV6QC25QPC");
+  </script>
+
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/ottericon.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@1&family=Urbanist:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0ea5e9" />
+  <meta name="robots" content="index, follow" />
+  <meta property="og:site_name" content="Pathfinder" />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="/ottericon.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="/ottericon.png" />
+  <meta name="twitter:site" content="@usepathfinder" />
+  <link rel="apple-touch-icon" href="/ottericon.png" />
+  <title>Pathfinder - Your Ultimate Internship Platform</title>
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('theme');
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var theme = saved || (prefersDark ? 'dark' : 'light');
+        var root = document.documentElement;
+        if (theme === 'dark') {
+          root.classList.add('dark');
+        } else {
+          root.classList.remove('dark');
+        }
+      } catch (e) {
+        // noop
+      }
+    })();
+  </script>
+  <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "Pathfinder",
+        "url": "https://usepathfinder.app",
+        "logo": "https://usepathfinder.app/ottericon.png",
+        "sameAs": [
+          "https://twitter.com/usepathfinder",
+          "https://www.reddit.com/r/PathfinderHQ",
+          "https://www.instagram.com/usepathfinderapp/",
+          "https://www.linkedin.com/company/usepathfinder"
+        ]
+      }
+    </script>
+  <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Pathfinder",
+        "url": "https://usepathfinder.app",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://usepathfinder.app/startups?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
+</head>
+
+<body class="font-urbanist">
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
+</html>

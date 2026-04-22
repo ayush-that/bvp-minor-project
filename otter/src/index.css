@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base theme variables (light mode) */
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+
+    /* Brand primary: #1B9BFA */
+    --primary: 205 93% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --ring: 215 20.2% 65.1%;
+
+    /* Consistent 4px radius */
+    --radius: 0.25rem;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+
+    /* Keep brand primary in dark as well */
+    --primary: 205 93% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --ring: 217.2 32.6% 17.5%;
+  }
+}
+
+/* Apply variables via Tailwind theme */
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html,
+  body,
+  #root {
+    min-height: 100vh;
+  }
+  body {
+    @apply bg-background text-foreground overflow-x-hidden;
+  }
+}
+
+/* utility: dotted background pattern, theme-aware */
+@layer utilities {
+  .bg-dots {
+    background-image: radial-gradient(
+      circle at 1px 1px,
+      hsl(var(--foreground) / 0.14) 1.25px,
+      transparent 1.75px
+    );
+    background-size: 18px 18px;
+  }
+  /* Hide scrollbar but keep scroll behavior (cross-browser) */
+  .noscrollbar {
+    -ms-overflow-style: none; /* IE and old Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .noscrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge (Chromium) */
+  }
+  /* Page-scoped hidden scrollbar: apply this class to <html> while on Landing */
+  .landing-hidden-scroll,
+  .landing-hidden-scroll body {
+    -ms-overflow-style: none; /* IE and old Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+  .landing-hidden-scroll::-webkit-scrollbar,
+  .landing-hidden-scroll body::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge (Chromium) */
+  }
+}
+
+@layer base {
+  /* Chrome, Edge, Safari */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background)); /* follows theme */
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--primary)); /* brand blue */
+    border-radius: 9999px;
+    border: 2px solid hsl(var(--background)); /* padding effect */
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--primary) / 0.9); /* slightly darker on hover */
+  }
+
+  /* Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--primary)) hsl(var(--background));
+  }
+}

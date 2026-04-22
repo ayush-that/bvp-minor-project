@@ -1,0 +1,22 @@
+{
+  "redirects": [
+    {
+      "source": "/",
+      "has": [{ "type": "host", "value": "s.usepathfinder.app" }],
+      "destination": "https://usepathfinder.app",
+      "permanent": true
+    },
+    {
+      "source": "/:slug*",
+      "has": [{ "type": "host", "value": "s.usepathfinder.app" }],
+      "destination": "https://usepathfinder.app/app/startups/:slug*",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
