@@ -34,7 +34,24 @@ class Settings(BaseSettings):
     # OpenAI Configuration
     openai_model_extract: str = "gpt-4o"
     openai_model_match: str = "gpt-5-mini"
-    
+
+    # Multi-provider agent keys
+    anthropic_api_key: str = ""
+    gemini_api_key: str = ""
+    openrouter_api_key: str = ""
+
+    # Per-agent model selection
+    discovery_model: str = "gemini-2.5-flash"
+    extraction_model: str = "gpt-4o-mini"
+    critic_model: str = "claude-haiku-4-5-20251001"
+    matching_model: str = "claude-sonnet-4-6"
+
+    # SQLite
+    sqlite_path: str = "./pathfinder.db"
+
+    # Parallel fan-out
+    extraction_concurrency: int = 8
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

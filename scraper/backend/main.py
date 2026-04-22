@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 
 from .routes import scraper
 from .config import get_settings
+from .storage import get_db
 
 # Load environment variables
 load_dotenv()
@@ -21,6 +22,7 @@ async def lifespan(app: FastAPI):
     """Application lifespan handler"""
     # Startup
     print(f"🚀 Starting {settings.api_title} v{settings.api_version}")
+    await get_db().init()
     yield
     # Shutdown
     print("👋 Shutting down gracefully")
