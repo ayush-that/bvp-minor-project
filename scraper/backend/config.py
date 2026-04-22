@@ -31,9 +31,9 @@ class Settings(BaseSettings):
     firecrawl_api_url: str = "https://api.firecrawl.dev/v1"
     firecrawl_timeout: int = 60
     
-    # OpenAI-compatible model IDs (used via OpenRouter)
-    openai_model_extract: str = "openai/gpt-4o"
-    openai_model_match: str = "openai/gpt-5-mini"
+    # Legacy model IDs used by scraper_service.py. Valid OpenRouter slugs.
+    openai_model_extract: str = "openai/gpt-4o-mini"
+    openai_model_match: str = "openai/gpt-4o-mini"
 
     # Multi-provider agent keys (retained for compatibility; unused now that all
     # traffic is routed through OpenRouter).
