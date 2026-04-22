@@ -51,10 +51,22 @@ Return JSON in this exact shape:
   "patch": object | null             // a partial dict of corrected fields to merge onto the extracted JSON, or null if ok=true
 }
 
+The EXTRACTED JSON MUST conform to this schema:
+- job_title:           string
+- company:             string
+- location:            string
+- work_mode:           one of "remote" | "hybrid" | "onsite" | "unknown" (NO other values allowed)
+- compensation:        string
+- duration_weeks:      number or null
+- deadline:            string (ISO-8601) or null
+- key_skills:          array of strings
+- description_summary: string
+
 Rules:
 - ok = true only if every field in EXTRACTED is consistent with SOURCE and the schema shape is intact.
 - Flag invented data (field present in EXTRACTED but not in SOURCE) as a hard issue and include a patch that sets that field to null or "".
 - Flag missing obvious data (field null/empty in EXTRACTED but clearly present in SOURCE) and include it in the patch.
+- NEVER propose a patch value that violates the schema (e.g. work_mode="flexible" is invalid — must be one of the four allowed values).
 - Do not rewrite fields that are both correct and faithful.
 - JSON ONLY.""",
 

@@ -1,5 +1,6 @@
-"""Extraction Agent — OpenAI gpt-4o-mini converts one posting to structured JSON.
+"""Extraction Agent — converts one posting to structured JSON.
 
+Provider is chosen via `extraction_model` in settings (default: Claude Haiku).
 Uses Firecrawl markdown (cheap) rather than Firecrawl's native extract action
 so the Critic has the same raw source we parsed from.
 """
@@ -22,8 +23,11 @@ async def _firecrawl_markdown(url: str) -> str:
             headers={"Authorization": f"Bearer {s.firecrawl_api_key}"},
             json={"url": url, "formats": ["markdown"]},
         )
+    try:
         r.raise_for_status()
-        data = r.json()
+    except httpx.HTTPStatusError as e:
+        raise AgentError(f"firecrawl HTTP {e.response.status_code} for {url}") from e
+    data = r.json()
     if not data.get("success"):
         raise AgentError(f"firecrawl failed for {url}: {data.get('message')}")
     return data["data"]["markdown"]
@@ -35,7 +39,10 @@ class ExtractionAgent:
 
     async def run(self, apply_link: str) -> tuple[Optional[dict], str]:
         """Return (posting_dict_or_None, raw_markdown_source)."""
-        md = await _firecrawl_markdown(apply_link)
+        try:
+            md = await _firecrawl_markdown(apply_link)
+        except AgentError:
+            return None, ""
         trimmed = md[:30000]
         user = f"Source URL: {apply_link}\n\nContent:\n{trimmed}"
         try:

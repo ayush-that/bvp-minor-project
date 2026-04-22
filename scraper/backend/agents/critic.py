@@ -1,9 +1,13 @@
 """Critic Agent — Claude Haiku audits an extraction against its source and emits a patch."""
 from __future__ import annotations
 
+import json
+
 from ..config import get_settings
 from .base import LLM, AgentError
 from .prompts import SYSTEM_PROMPTS
+
+VALID_WORK_MODES = {"remote", "hybrid", "onsite", "unknown"}
 
 
 class CriticAgent:
@@ -12,7 +16,6 @@ class CriticAgent:
 
     async def run(self, source_markdown: str, extracted: dict) -> dict:
         """Return possibly-patched extraction dict."""
-        import json
         user = (
             "<SOURCE>\n" + source_markdown[:15000] + "\n</SOURCE>\n\n"
             "<EXTRACTED>\n" + json.dumps(extracted, indent=2) + "\n</EXTRACTED>"
@@ -26,5 +29,8 @@ class CriticAgent:
             return extracted
         patch = verdict.get("patch") or {}
         merged = {**extracted, **patch}
+        # Hard schema guard: critic is advisory, not authoritative.
+        if merged.get("work_mode") not in VALID_WORK_MODES:
+            merged["work_mode"] = extracted.get("work_mode") or "unknown"
         merged["apply_link"] = extracted.get("apply_link")  # never overwrite URL
         return merged

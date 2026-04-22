@@ -21,8 +21,11 @@ async def _firecrawl_markdown(url: str) -> str:
             headers={"Authorization": f"Bearer {s.firecrawl_api_key}"},
             json={"url": url, "formats": ["markdown"]},
         )
+    try:
         r.raise_for_status()
-        data = r.json()
+    except httpx.HTTPStatusError as e:
+        raise AgentError(f"firecrawl HTTP {e.response.status_code} for {url}") from e
+    data = r.json()
     if not data.get("success"):
         raise AgentError(f"firecrawl failed for {url}: {data.get('message')}")
     return data["data"]["markdown"]
