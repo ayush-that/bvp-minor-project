@@ -20,12 +20,15 @@ class ScraperService:
     def __init__(self):
         self.settings = get_settings()
         self.firecrawl_api_key = self.settings.firecrawl_api_key
-        self.openai_client = OpenAI(api_key=self.settings.openai_api_key)
-        
+        self.openai_client = OpenAI(
+            api_key=self.settings.openrouter_api_key,
+            base_url=self.settings.openrouter_base_url,
+        )
+
         if not self.firecrawl_api_key:
             raise ValueError("FIRECRAWL_API_KEY not found in environment variables")
-        if not self.openai_client.api_key:
-            raise ValueError("OPENAI_API_KEY not found in environment variables")
+        if not self.settings.openrouter_api_key:
+            raise ValueError("OPENROUTER_API_KEY not found in environment variables")
     
     def scrape_jobs_page(self, url: str, max_jobs: int = 30) -> List[str]:
         """

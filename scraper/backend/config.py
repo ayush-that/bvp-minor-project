@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     
     # API Keys
     firecrawl_api_key: str
-    openai_api_key: str
+    openai_api_key: str = ""
     
     # API Configuration
     api_title: str = "Firecrawl Job Scraper API"
@@ -31,20 +31,24 @@ class Settings(BaseSettings):
     firecrawl_api_url: str = "https://api.firecrawl.dev/v1"
     firecrawl_timeout: int = 60
     
-    # OpenAI Configuration
-    openai_model_extract: str = "gpt-4o"
-    openai_model_match: str = "gpt-5-mini"
+    # OpenAI-compatible model IDs (used via OpenRouter)
+    openai_model_extract: str = "openai/gpt-4o"
+    openai_model_match: str = "openai/gpt-5-mini"
 
-    # Multi-provider agent keys
+    # Multi-provider agent keys (retained for compatibility; unused now that all
+    # traffic is routed through OpenRouter).
     anthropic_api_key: str = ""
     gemini_api_key: str = ""
     openrouter_api_key: str = ""
 
-    # Per-agent model selection (one model per provider for variety)
-    discovery_model: str = "gemini-2.5-flash"
-    extraction_model: str = "gpt-4o-mini"
-    critic_model: str = "claude-haiku-4-5-20251001"
-    matching_model: str = "claude-sonnet-4-6"
+    # OpenRouter endpoint (OpenAI-compatible)
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+
+    # Per-agent model selection — OpenRouter namespaced IDs
+    discovery_model: str = "google/gemini-2.5-flash"
+    extraction_model: str = "openai/gpt-4o-mini"
+    critic_model: str = "anthropic/claude-haiku-4.5"
+    matching_model: str = "anthropic/claude-sonnet-4.5"
 
     # SQLite
     sqlite_path: str = "./pathfinder.db"

@@ -1,8 +1,7 @@
-"""Multi-provider async LLM client. One class, three backends, JSON-mode helpers."""
+"""Async LLM client. All traffic routes through OpenRouter's OpenAI-compatible API."""
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
 
 import httpx
 
@@ -14,7 +13,7 @@ class AgentError(Exception):
 
 
 class LLM:
-    """Thin async wrapper over OpenAI, Anthropic, and Gemini."""
+    """Thin async wrapper over OpenRouter chat completions."""
 
     def __init__(self, model: str, *, temperature: float = 0.0, max_tokens: int = 2000):
         self.model = model
@@ -28,7 +27,6 @@ class LLM:
         try:
             return json.loads(raw)
         except json.JSONDecodeError as e:
-            # Last-resort tolerance: find the first {...} span.
             start = raw.find("{")
             end = raw.rfind("}")
             if start != -1 and end != -1 and end > start:
@@ -39,30 +37,16 @@ class LLM:
             raise AgentError(f"bad JSON from {self.model}: {e}\nRAW:\n{raw[:500]}")
 
     async def _call(self, system: str, user: str) -> str:
-        provider = self._provider()
-        if provider == "openai":
-            return await self._openai(system, user)
-        if provider == "anthropic":
-            return await self._anthropic(system, user)
-        if provider == "gemini":
-            return await self._gemini(system, user)
-        raise AgentError(f"unknown provider for model {self.model}")
-
-    def _provider(self) -> str:
-        m = self.model.lower()
-        if m.startswith("gpt"):
-            return "openai"
-        if m.startswith("claude"):
-            return "anthropic"
-        if m.startswith("gemini"):
-            return "gemini"
-        raise AgentError(f"cannot infer provider from model id: {self.model}")
-
-    async def _openai(self, system: str, user: str) -> str:
+        if not self.settings.openrouter_api_key:
+            raise AgentError("OPENROUTER_API_KEY is not configured")
+        url = f"{self.settings.openrouter_base_url.rstrip('/')}/chat/completions"
         async with httpx.AsyncClient(timeout=120) as c:
             r = await c.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={"Authorization": f"Bearer {self.settings.openai_api_key}"},
+                url,
+                headers={
+                    "Authorization": f"Bearer {self.settings.openrouter_api_key}",
+                    "Content-Type": "application/json",
+                },
                 json={
                     "model": self.model,
                     "temperature": self.temperature,
@@ -74,44 +58,10 @@ class LLM:
                     ],
                 },
             )
-            r.raise_for_status()
+            try:
+                r.raise_for_status()
+            except httpx.HTTPStatusError as e:
+                raise AgentError(
+                    f"openrouter HTTP {e.response.status_code} for {self.model}: {e.response.text[:300]}"
+                ) from e
             return r.json()["choices"][0]["message"]["content"]
-
-    async def _anthropic(self, system: str, user: str) -> str:
-        async with httpx.AsyncClient(timeout=120) as c:
-            r = await c.post(
-                "https://api.anthropic.com/v1/messages",
-                headers={
-                    "x-api-key": self.settings.anthropic_api_key,
-                    "anthropic-version": "2023-06-01",
-                    "content-type": "application/json",
-                },
-                json={
-                    "model": self.model,
-                    "max_tokens": self.max_tokens,
-                    "temperature": self.temperature,
-                    "system": system + "\n\nReply with JSON only. No prose, no code fences.",
-                    "messages": [{"role": "user", "content": user}],
-                },
-            )
-            r.raise_for_status()
-            return r.json()["content"][0]["text"]
-
-    async def _gemini(self, system: str, user: str) -> str:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent?key={self.settings.gemini_api_key}"
-        async with httpx.AsyncClient(timeout=120) as c:
-            r = await c.post(
-                url,
-                json={
-                    "systemInstruction": {"parts": [{"text": system}]},
-                    "contents": [{"role": "user", "parts": [{"text": user}]}],
-                    "generationConfig": {
-                        "temperature": self.temperature,
-                        "maxOutputTokens": self.max_tokens,
-                        "responseMimeType": "application/json",
-                    },
-                },
-            )
-            r.raise_for_status()
-            data = r.json()
-            return data["candidates"][0]["content"]["parts"][0]["text"]
