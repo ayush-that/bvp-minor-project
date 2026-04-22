@@ -41,8 +41,10 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
 
     # Per-agent model selection
+    # NOTE: OpenAI key provided by user is revoked (401). Extraction routed to
+    # Claude Haiku until a fresh OpenAI key is supplied; swap back by editing .env.
     discovery_model: str = "gemini-2.5-flash"
-    extraction_model: str = "gpt-4o-mini"
+    extraction_model: str = "claude-haiku-4-5-20251001"
     critic_model: str = "claude-haiku-4-5-20251001"
     matching_model: str = "claude-sonnet-4-6"
 
