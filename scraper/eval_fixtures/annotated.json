@@ -1,0 +1,52 @@
+[
+  {
+    "apply_link": "https://stripe.com/jobs/listing/account-executive-hunter-uk-enterprise-retail/7451366",
+    "expected": {
+      "job_title": "Account Executive (Hunter)",
+      "company": "Stripe",
+      "location": "London",
+      "work_mode": "onsite",
+      "key_skills": ["sales experience", "relationship management", "negotiation skills", "presentation skills", "consultative selling"]
+    }
+  },
+  {
+    "apply_link": "https://stripe.com/jobs/listing/account-executive-ai-sales/7532733",
+    "expected": {
+      "job_title": "Account Executive, AI Sales",
+      "company": "Stripe",
+      "location": "South San Francisco HQ",
+      "work_mode": "hybrid",
+      "key_skills": ["sales experience", "complex sales cycles", "negotiation skills", "account planning", "technical understanding"]
+    }
+  },
+  {
+    "apply_link": "https://stripe.com/jobs/listing/account-executive-ai-startups-existing-business/7746909",
+    "expected": {
+      "job_title": "Account Executive, AI Startups - Existing Business",
+      "company": "Stripe",
+      "location": "New York",
+      "work_mode": "hybrid",
+      "key_skills": ["client-facing sales", "negotiation", "sales strategy", "project management", "SQL"]
+    }
+  },
+  {
+    "apply_link": "https://stripe.com/jobs/listing/account-executive-commercial-existing-business/7306915",
+    "expected": {
+      "job_title": "Account Executive, Commercial (Existing Business)",
+      "company": "Stripe",
+      "location": "New York, or Chicago",
+      "work_mode": "hybrid",
+      "key_skills": ["sales cycle management", "upselling", "contract negotiation", "quantitative analysis", "customer relationship management"]
+    }
+  },
+  {
+    "apply_link": "https://stripe.com/jobs/listing/account-executive-enterprise-billing-existing-business/7607568",
+    "expected": {
+      "job_title": "Account Executive, Enterprise - Billing (Existing Business)",
+      "company": "Stripe",
+      "location": "London",
+      "work_mode": "hybrid",
+      "key_skills": ["sales experience", "billing solutions", "negotiation skills", "relationship building", "strategic planning"]
+    }
+  }
+]
