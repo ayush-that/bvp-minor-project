@@ -20,7 +20,11 @@ load_dotenv()
 
 # Initialize the FirecrawlApp with your API key
 firecrawl_api_key = os.getenv("FIRECRAWL_API_KEY")
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# All LLM traffic routes through OpenRouter's OpenAI-compatible API.
+client = OpenAI(
+    api_key=os.getenv("OPENROUTER_API_KEY"),
+    base_url=os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+)
 
 # Set the jobs page URL
 jobs_page_url = "https://openai.com/careers/search"
@@ -144,7 +148,7 @@ apply_links = []
 if html_content:
     try:
         completion = client.chat.completions.create(
-            model="gpt-4o",
+            model="openai/gpt-4o-mini",
             messages=[
                 {
                     "role": "user",
@@ -261,7 +265,7 @@ And the following job listings:
 """
 
 completion = client.chat.completions.create(
-    model="gpt-5-mini",
+    model="openai/gpt-4o-mini",
     messages=[
         {
             "role": "user",
