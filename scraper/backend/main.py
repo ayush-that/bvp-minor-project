@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
 from .routes import scraper
+from .routes import pipeline as pipeline_routes
 from .config import get_settings
 from .storage import get_db
 
@@ -46,6 +47,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(scraper.router, prefix="/api", tags=["scraper"])
+app.include_router(pipeline_routes.router, prefix="/api", tags=["pipeline"])
 
 
 @app.get("/")
