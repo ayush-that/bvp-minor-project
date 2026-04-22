@@ -88,13 +88,23 @@ Return JSON in exactly this shape:
       "score":      number,     // 0–100, your composite fit score
       "reason":     string      // 1 short sentence: WHY this candidate fits (or doesn't)
     }
-  ]
+  ],
+  "warning": string | null      // non-null ONLY when the resume is inadequate; see rules
 }
 
-Rules:
-- Order the array strictly by descending score.
+Resume-quality gate (check BEFORE scoring):
+- If <RESUME> is empty, whitespace-only, fewer than 40 meaningful words, or so vague it contains no concrete skills / education / work history (e.g. "I am looking for a job", "I know computers"), you MUST:
+  1. Return score = 0 for every posting.
+  2. Set "reason" on each to "insufficient resume — cannot evaluate fit".
+  3. Set "warning" to a single actionable sentence telling the candidate what's missing (e.g. "Resume is too short — add your education, at least 3 technical skills, and one project or work experience.").
+  DO NOT guess or project skills the candidate did not mention.
+
+Normal scoring rules (only when the resume passes the gate):
+- Order the "ranked" array strictly by descending score.
 - Include EVERY posting that was provided — never drop any.
 - Score must reflect: (a) skill overlap, (b) seniority fit, (c) domain alignment, (d) location/remote compatibility.
-- Reasons must be concrete — reference the candidate's actual background, not generic praise.
-- JSON ONLY, no prose outside the JSON.""",
+- Reasons must be concrete — reference the candidate's ACTUAL background (a specific skill, project, or prior role from the resume), not generic praise.
+- Set "warning" to null.
+
+JSON ONLY, no prose outside the JSON.""",
 }

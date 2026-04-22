@@ -78,10 +78,13 @@ async def run_pipeline(
     yield _sse("stage", {"stage": "matching", "message": "Ranking postings against resume"})
 
     try:
-        ranked = await MatchingAgent().run(resume, results)
+        ranked, warning = await MatchingAgent().run(resume, results)
     except Exception as e:
         yield _sse("error", {"where": "matching", "detail": str(e)})
         return
+
+    if warning:
+        yield _sse("warning", {"message": warning})
 
     dismissed = await db.dismissed_ids()
     visible = [r for r in ranked if r["id"] not in dismissed]
