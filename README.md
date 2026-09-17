@@ -8,35 +8,9 @@ Everything runs in **one unified interface** at the root of the project with a h
 
 ## Architecture Diagram
 
-A multi-zoom architecture diagram built with Excalidraw is available in `docs/architecture.excalidraw`. You can open this file directly at [excalidraw.com](https://excalidraw.com) to view or edit the components, data schemas, and agent sequence flow.
+![Pathfinder Multi-Agent Architecture](docs/architecture.svg)
 
-```
-                         ┌──────────────────────────────────────────────┐
-                         │   Pathfinder Unified Dashboard (Port 5173)   │
-                         │       (React 18 + Vite + Tailwind CSS)       │
-                         └──────────────────────┬───────────────────────┘
-                                                │  SSE Stream & REST
-                                                ▼
-                         ┌──────────────────────────────────────────────┐
-                         │   FastAPI Agentic Orchestrator (Port 8000)   │
-                         │      (Python 3.12 Asynchronous Runtime)      │
-                         └──────────────────────┬───────────────────────┘
-                                                │
-         ┌──────────────────────┬───────────────┴──────────────┬──────────────────────┐
-         ▼                      ▼                              ▼                      ▼
-┌──────────────────┐  ┌──────────────────┐           ┌──────────────────┐  ┌──────────────────┐
-│ Discovery Agent  │  │ Extraction Agent │           │   Critic Agent   │  │  Matching Agent  │
-│  Portal Crawler  │  │  Schema Engine   │           │ Integrity Audit  │  │   Fit Reasoner   │
-│ (Firecrawl + AI) │  │(Pydantic Schema) │           │(Anti-Hallucinate)│  │(Qualitative Fit) │
-└────────┬─────────┘  └─────────┬────────┘           └─────────┬────────┘  └────────┬─────────┘
-         │                      │                              │                    │
-         └──────────────────────┴───────────────┬──────────────┴────────────────────┘
-                                                ▼
-                                    ┌───────────────────────┐
-                                    │ SQLite (pathfinder.db)│
-                                    │  Deduplication Store  │
-                                    └───────────────────────┘
-```
+*A full editable Excalidraw diagram is also available in [`docs/architecture.excalidraw`](docs/architecture.excalidraw) for interactive presentations.*
 
 ---
 
@@ -79,7 +53,6 @@ minor-project/
 ├── docs/
 │   └── architecture.excalidraw    # Visual system architecture diagram
 ├── package.json                   # Frontend dependencies & scripts
-├── start.sh                       # Single-command runner for all services
 └── README.md                      # Documentation
 ```
 
@@ -87,9 +60,12 @@ minor-project/
 
 ## Getting Started
 
-### One-Command Launch (Recommended)
+### Single-Command Start (Recommended)
+Run one command to boot both the Vite frontend and the FastAPI backend concurrently with colored streaming logs:
 ```bash
-./start.sh
+npm run dev
+# or
+bun run dev
 ```
 
 - **Pathfinder Dashboard**: [http://localhost:5173](http://localhost:5173) (or `/app/pathfinder`)

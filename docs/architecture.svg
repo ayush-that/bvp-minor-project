@@ -1,0 +1,157 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 780" width="100%" height="100%" style="background:#ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+  <defs>
+    <style>
+      .title { font-weight: 700; fill: #1e3a5f; }
+      .sub { font-size: 13px; fill: #64748b; }
+      .tag { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+      .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 11px; }
+      .desc { font-size: 12px; fill: #475569; line-height: 1.4; }
+      .box { rx: 8px; stroke-width: 1.5; }
+      .card { rx: 6px; stroke-width: 1; }
+      .arrow { stroke: #3b82f6; stroke-width: 2; fill: none; stroke-linecap: round; }
+      .arrow-dashed { stroke: #10b981; stroke-width: 2; fill: none; stroke-linecap: round; stroke-dasharray: 4 4; }
+    </style>
+    <marker id="arr-blue" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#3b82f6"/>
+    </marker>
+    <marker id="arr-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 8 5 L 0 9 z" fill="#10b981"/>
+    </marker>
+    <filter id="shadow" x="-3%" y="-2%" width="106%" height="108%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.04"/>
+    </filter>
+  </defs>
+
+  <!-- HEADER -->
+  <text x="50" y="50" class="title" font-size="24">PATHFINDER: AUTONOMOUS RECRUITMENT INTELLIGENCE</text>
+  <text x="50" y="74" class="sub">Production System Architecture • Asynchronous Multi-Agent Pipeline • Real-Time SSE Streaming</text>
+
+  <!-- SUMMARY FLOW (TOP BAR) -->
+  <rect x="50" y="100" width="1100" height="64" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+  
+  <text x="75" y="128" class="tag" fill="#3b82f6">01 • INPUT</text>
+  <text x="75" y="146" font-size="12" font-weight="500" fill="#334155">Resume &amp; Portal Seed</text>
+
+  <path d="M 230 132 L 270 132" class="arrow" marker-end="url(#arr-blue)"/>
+
+  <text x="290" y="128" class="tag" fill="#d97706">02 • DISCOVERY</text>
+  <text x="290" y="146" font-size="12" font-weight="500" fill="#334155">Firecrawl URL Crawler</text>
+
+  <path d="M 450 132 L 490 132" class="arrow" marker-end="url(#arr-blue)"/>
+
+  <text x="510" y="128" class="tag" fill="#4f46e5">03 • EXTRACTION</text>
+  <text x="510" y="146" font-size="12" font-weight="500" fill="#334155">Schema Normalization</text>
+
+  <path d="M 670 132 L 710 132" class="arrow" marker-end="url(#arr-blue)"/>
+
+  <text x="730" y="128" class="tag" fill="#db2777">04 • CRITIC AUDIT</text>
+  <text x="730" y="146" font-size="12" font-weight="500" fill="#334155">Anti-Hallucination Guard</text>
+
+  <path d="M 890 132 L 930 132" class="arrow" marker-end="url(#arr-blue)"/>
+
+  <text x="950" y="128" class="tag" fill="#059669">05 • MATCHING &amp; RANK</text>
+  <text x="950" y="146" font-size="12" font-weight="500" fill="#334155">Qualitative Fit Scoring</text>
+
+  <!-- COLUMN 1: CLIENT TIER -->
+  <rect x="50" y="190" width="340" height="540" class="box" fill="#ffffff" stroke="#cbd5e1" filter="url(#shadow)"/>
+  <rect x="50" y="190" width="340" height="42" rx="8" fill="#f1f5f9"/>
+  <text x="70" y="217" class="title" font-size="14">UNIFIED CLIENT (PORT 5173)</text>
+  <text x="260" y="217" class="tag" fill="#0284c7">REACT 18 • VITE</text>
+
+  <!-- Client subcards -->
+  <rect x="70" y="250" width="300" height="74" class="card" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="85" y="272" class="tag" fill="#0f172a">Zero-Login Local State</text>
+  <text x="85" y="292" class="desc">• Auto-hydrated local profile (Ayush Singh)</text>
+  <text x="85" y="308" class="desc">• Instant access to all dashboard routes</text>
+
+  <rect x="70" y="338" width="300" height="96" class="card" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="85" y="360" class="tag" fill="#0f172a">Mission Control (/app)</text>
+  <text x="85" y="380" class="desc">• Specialist agent tiles with execution states</text>
+  <text x="85" y="396" class="desc">• Pre-seeded portals: OpenAI, Stripe, Wellfound</text>
+  <text x="85" y="412" class="desc">• 1-Click candidate engineering resume loader</text>
+
+  <rect x="70" y="448" width="300" height="106" class="card" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="85" y="470" class="tag" fill="#0f172a">Interactive Match Results</text>
+  <text x="85" y="490" class="desc">• Animated SVG ScoreRings (0–100% Fit)</text>
+  <text x="85" y="506" class="desc">• Natural language reason quotation blocks</text>
+  <text x="85" y="522" class="desc">• Normalized skill badges (PyTorch, FastAPI)</text>
+  <text x="85" y="538" class="desc">• Direct job application &amp; dismiss actions</text>
+
+  <rect x="70" y="568" width="300" height="142" rx="6" fill="#0f172a" stroke="#1e293b"/>
+  <text x="85" y="590" class="mono" fill="#38bdf8" font-weight="600">// Live SSE Event Terminal</text>
+  <text x="85" y="612" class="mono" fill="#4ade80">13:04:12 [STAGE] Scrape initiated</text>
+  <text x="85" y="630" class="mono" fill="#4ade80">13:04:14 [DISCOVERY] 8 jobs verified</text>
+  <text x="85" y="648" class="mono" fill="#facc15">13:04:16 [POSTING] ML Intern @ Stripe</text>
+  <text x="85" y="666" class="mono" fill="#a78bfa">13:04:18 [CRITIC] Schema audited: OK</text>
+  <text x="85" y="684" class="mono" fill="#38bdf8">13:04:20 [RANKED] Fit Score: 95%</text>
+
+  <!-- COLUMN 2: FASTAPI ORCHESTRATOR -->
+  <rect x="430" y="190" width="340" height="540" class="box" fill="#ffffff" stroke="#cbd5e1" filter="url(#shadow)"/>
+  <rect x="430" y="190" width="340" height="42" rx="8" fill="#f1f5f9"/>
+  <text x="450" y="217" class="title" font-size="14">AGENT ORCHESTRATOR (PORT 8000)</text>
+  <text x="660" y="217" class="tag" fill="#7c3aed">PYTHON 3.12</text>
+
+  <rect x="450" y="250" width="300" height="88" class="card" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="465" y="272" class="tag" fill="#0f172a">Streaming SSE Engine</text>
+  <text x="465" y="292" class="desc">• POST /api/pipeline (Real-time SSE stream)</text>
+  <text x="465" y="308" class="desc">• POST /api/resume (Multipart PDF parsing)</text>
+  <text x="465" y="324" class="desc">• GET  /api/seeds (Pre-verified portal registry)</text>
+
+  <rect x="450" y="352" width="300" height="110" class="card" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="465" y="374" class="tag" fill="#0f172a">Execution Management</text>
+  <text x="465" y="394" class="desc">• Parallel extraction fan-out (Concurrency: 8)</text>
+  <text x="465" y="410" class="desc">• Input validation &amp; word-count gate (≥40 words)</text>
+  <text x="465" y="426" class="desc">• Content-based deduplication (MD5 Fingerprint)</text>
+  <text x="465" y="442" class="desc">• Async client connection pooling (httpx)</text>
+
+  <rect x="450" y="476" width="300" height="98" class="card" fill="#ecfdf5" stroke="#a7f3d0"/>
+  <text x="465" y="498" class="tag" fill="#047857">Presentation Resilience Guard</text>
+  <text x="465" y="518" class="desc" fill="#065f46">• Built-in fallback extraction logic</text>
+  <text x="465" y="534" class="desc" fill="#065f46">• Resilient against network or rate-limit dips</text>
+  <text x="465" y="550" class="desc" fill="#065f46">• Zero unhandled crashes during panel demos</text>
+
+  <rect x="450" y="588" width="300" height="122" class="card" fill="#f8fafc" stroke="#e2e8f0"/>
+  <text x="465" y="610" class="tag" fill="#0f172a">SQLite Local Persistence</text>
+  <text x="465" y="630" class="mono" fill="#475569">TABLE postings (id, fp, skills, raw)</text>
+  <text x="465" y="648" class="mono" fill="#475569">TABLE feedback (id, action, time)</text>
+  <text x="465" y="666" class="desc">• Zero-external DB dependency</text>
+  <text x="465" y="682" class="desc">• Instant persistent storage in pathfinder.db</text>
+
+  <!-- COLUMN 3: MULTI-AGENT INFERENCE -->
+  <rect x="810" y="190" width="340" height="540" class="box" fill="#ffffff" stroke="#cbd5e1" filter="url(#shadow)"/>
+  <rect x="810" y="190" width="340" height="42" rx="8" fill="#f1f5f9"/>
+  <text x="830" y="217" class="title" font-size="14">AUTONOMOUS AGENTS</text>
+  <text x="1030" y="217" class="tag" fill="#059669">DEEPSEEK / FLASH</text>
+
+  <rect x="830" y="250" width="300" height="98" class="card" fill="#fffbeb" stroke="#fde68a"/>
+  <text x="845" y="272" class="tag" fill="#b45309">1. Discovery Agent</text>
+  <text x="845" y="292" class="desc">• Live website traversal via Firecrawl API</text>
+  <text x="845" y="308" class="desc">• Extracts valid job posting application links</text>
+  <text x="845" y="324" class="desc">• Strips headers, footers &amp; marketing noise</text>
+
+  <rect x="830" y="362" width="300" height="98" class="card" fill="#eef2ff" stroke="#c7d2fe"/>
+  <text x="845" y="384" class="tag" fill="#4338ca">2. Extraction Agent</text>
+  <text x="845" y="404" class="desc">• Extracts unstructured markdown descriptions</text>
+  <text x="845" y="420" class="desc">• Populates Pydantic schema: title, pay, skills</text>
+  <text x="845" y="436" class="desc">• Classifies mode: Remote / Hybrid / On-site</text>
+
+  <rect x="830" y="474" width="300" height="98" class="card" fill="#fdf2f8" stroke="#fbcfe8"/>
+  <text x="845" y="496" class="tag" fill="#be185d">3. Critic Agent</text>
+  <text x="845" y="516" class="desc">• Audits candidate fields against raw text</text>
+  <text x="845" y="532" class="desc">• Patches hallucinated salaries or qualifications</text>
+  <text x="845" y="548" class="desc">• Preserves canonical apply URL destination</text>
+
+  <rect x="830" y="586" width="300" height="124" class="card" fill="#faf5ff" stroke="#e9d5ff"/>
+  <text x="845" y="608" class="tag" fill="#7e22ce">4. Matching Agent</text>
+  <text x="845" y="628" class="desc">• Deep qualitative semantic fit evaluation</text>
+  <text x="845" y="644" class="desc">• Scores 0–100 based on hands-on project proof</text>
+  <text x="845" y="660" class="desc">• Generates concise 1–2 sentence fit rationale</text>
+  <text x="845" y="678" class="desc">• Re-ranks listings dynamically by fit score</text>
+
+  <!-- INTER-TIER CONNECTIONS -->
+  <path d="M 390 290 L 430 290" class="arrow" marker-end="url(#arr-blue)"/>
+  <path d="M 430 640 L 390 640" class="arrow-dashed" marker-end="url(#arr-green)"/>
+  
+  <path d="M 770 290 L 810 290" class="arrow" marker-end="url(#arr-blue)"/>
+  <path d="M 810 640 L 770 640" class="arrow" marker-end="url(#arr-blue)"/>
+</svg>
