@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -n \"frontend,backend\" -c \"cyan.bold,magenta.bold\" --kill-others \"vite --host\" \"backend/.venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --reload\"",
+    "dev": "concurrently -n \"frontend,backend\" -c \"cyan.bold,magenta.bold\" --kill-others \"vite --host\" \"backend/.venv/bin/python -m backend.run\"",
     "dev:frontend": "vite",
-    "dev:backend": "backend/.venv/bin/uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000} --reload",
+    "dev:backend": "backend/.venv/bin/python -m backend.run",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
