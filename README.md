@@ -1,145 +1,125 @@
-# Pathfinder — Multi-Agent Internship Discovery & Outreach Platform
+# Pathfinder — Autonomous Multi-Agent Recruitment & Outreach Platform
 
-Pathfinder is an autonomous, multi-agent AI platform designed to discover, extract, audit, and intelligently match students with startup internship opportunities.
+Pathfinder is an autonomous, multi-agent platform engineered to crawl career portals, extract structured role data, audit schema integrity, and qualitatively rank candidate resumes for startup internship matching.
 
-Built with a modern web architecture, streaming real-time Server-Sent Events (SSE), and powered by Google Gemini Flash via OpenRouter for high-speed, cost-effective reasoning.
+Everything runs in **one unified interface** at the root of the project with a high-performance Python FastAPI backend, real-time Server-Sent Events (SSE) streaming, zero required logins, and underlying AI models completely abstracted from the end user.
 
 ---
 
-## System Architecture
+## Architecture Diagram
+
+A multi-zoom architecture diagram built with Excalidraw is available in `docs/architecture.excalidraw`. You can open this file directly at [excalidraw.com](https://excalidraw.com) to view or edit the components, data schemas, and agent sequence flow.
 
 ```
-                                  ┌───────────────────────────────┐
-                                  │      Client Applications      │
-                                  ├───────────────┬───────────────┤
-                                  │  Pathfinder   │    Matcher    │
-                                  │ (Vite / React)│  (Next.js 15) │
-                                  │   Port 5173   │   Port 3001   │
-                                  └───────┬───────┴───────┬───────┘
-                                          │               │
-                                          ▼               ▼
-                        ┌──────────────────────────────────────────────────┐
-                        │          FastAPI Streaming Backend               │
-                        │                  (Port 8000)                     │
-                        └─────────────────────────┬────────────────────────┘
-                                                  │
-                ┌─────────────────────────────────┴─────────────────────────────────┐
-                ▼                                 ▼                                 ▼
-       ┌─────────────────┐               ┌─────────────────┐               ┌─────────────────┐
-       │ Discovery Agent │               │Extraction Agent │               │  Critic Agent   │
-       │ (Gemini Flash)  │               │ (Gemini Flash)  │               │ (Gemini Flash)  │
-       │ Scrapes portals │               │ Structured JSON │               │ Audits schemas  │
-       └────────┬────────┘               └────────┬────────┘               └────────┬────────┘
-                │                                 │                                 │
-                └─────────────────────────────────┼─────────────────────────────────┘
-                                                  ▼
-                                       ┌─────────────────────┐
-                                       │   Matching Agent    │
-                                       │(Gemini 2.5 Flash)   │
-                                       │ Ranks with reasons  │
-                                       └──────────┬──────────┘
-                                                  │
-                                                  ▼
-                                       ┌─────────────────────┐
-                                       │ SQLite Database / DB│
-                                       │   (pathfinder.db)   │
-                                       └─────────────────────┘
+                         ┌──────────────────────────────────────────────┐
+                         │   Pathfinder Unified Dashboard (Port 5173)   │
+                         │       (React 18 + Vite + Tailwind CSS)       │
+                         └──────────────────────┬───────────────────────┘
+                                                │  SSE Stream & REST
+                                                ▼
+                         ┌──────────────────────────────────────────────┐
+                         │   FastAPI Agentic Orchestrator (Port 8000)   │
+                         │      (Python 3.12 Asynchronous Runtime)      │
+                         └──────────────────────┬───────────────────────┘
+                                                │
+         ┌──────────────────────┬───────────────┴──────────────┬──────────────────────┐
+         ▼                      ▼                              ▼                      ▼
+┌──────────────────┐  ┌──────────────────┐           ┌──────────────────┐  ┌──────────────────┐
+│ Discovery Agent  │  │ Extraction Agent │           │   Critic Agent   │  │  Matching Agent  │
+│  Portal Crawler  │  │  Schema Engine   │           │ Integrity Audit  │  │   Fit Reasoner   │
+│ (Firecrawl + AI) │  │(Pydantic Schema) │           │(Anti-Hallucinate)│  │(Qualitative Fit) │
+└────────┬─────────┘  └─────────┬────────┘           └─────────┬────────┘  └────────┬─────────┘
+         │                      │                              │                    │
+         └──────────────────────┴───────────────┬──────────────┴────────────────────┘
+                                                ▼
+                                    ┌───────────────────────┐
+                                    │ SQLite (pathfinder.db)│
+                                    │  Deduplication Store  │
+                                    └───────────────────────┘
 ```
 
 ---
 
-## Features
+## Key Capabilities
 
-- 🤖 **4-Stage Agentic Pipeline**:
-  1. **Discovery Agent**: Traverses career pages (Wellfound, Y Combinator, AngelList, etc.) via Firecrawl and isolates valid job application URLs.
-  2. **Extraction Agent**: Transforms raw scraped markdown into validated, schema-compliant job postings (job title, compensation, location, work mode, key technical skills).
-  3. **Critic Agent**: Audits extracted fields against the raw source text to patch hallucinations, verify work modes, and guarantee link integrity.
-  4. **Matching Agent**: Performs deep qualitative reasoning comparing candidate resumes with role requirements, producing match percentages and natural-language explanations.
-- ⚡ **Live SSE Streaming**: Watch each agent report its progress, discoveries, extractions, and evaluations in real time with zero buffering.
-- 📄 **Resume Scoring & Typst PDF Compilation**: Integrated ATS resume quality analysis and on-the-fly PDF resume generation.
-- 🏢 **Curated Startup Directory**: Browse verified startups with sector tags, direct email outreach templates, and recruitment contacts.
-- 🛡️ **Fail-Safe Offline Mode**: Built-in heuristic fallbacks ensuring live panel presentations never fail even under network or quota restrictions.
-
----
-
-## Tech Stack
-
-| Layer | Technologies |
-| :--- | :--- |
-| **Pathfinder Frontend** | React 18, TypeScript, Vite, Tailwind CSS, Radix UI primitives, Supabase |
-| **Scraper Frontend** | Next.js 15 (App Router, Turbopack), React 19, TypeScript, Lucide Icons |
-| **Backend & Pipeline** | FastAPI, Python 3.12, Pydantic v2, aiosqlite, Firecrawl API |
-| **AI Models** | Google Gemini 2.5 Flash & Flash-Lite via OpenRouter (fast, low-latency, cost-effective) |
-| **Package Managers** | Bun (Vite frontend), pnpm (Next.js frontend), uv (Python virtual environment) |
+1. **4 Autonomous Specialist Agents**:
+   - **Discovery Agent** (*Portal Crawler*): Traverses careers portals via Firecrawl to isolate live, direct job application URLs while eliminating boilerplate navigational links.
+   - **Extraction Agent** (*Schema Engine*): Converts unstructured job descriptions into strict, typed schema (job title, compensation, location, work mode, key technical skills).
+   - **Critic Agent** (*Integrity Auditor*): Audits extracted data directly against raw source text to patch hallucinations, verify work modes, and ensure link validity.
+   - **Matching Agent** (*Fit Reasoner*): Performs deep qualitative reasoning comparing candidate resumes with role demands, outputting fit scores (0–100) and articulate explanations.
+2. **Zero-Login Local Mode**: Seamlessly auto-hydrated with a local developer profile—no OAuth popups, Google sign-ins, or auth walls.
+3. **Abstracted AI Infrastructure**: The user interface focuses entirely on functional capabilities. All underlying models and inference providers are abstracted away.
+4. **Resilient Presentation Fail-Safe**: Built-in heuristic fallbacks ensure that live demonstrations will gracefully complete without errors even during network dips.
+5. **Resume Builder & ATS Scoring**: In-browser ATS scoring feedback and Typst-powered instant PDF compilation.
 
 ---
 
-## Quick Start (Showcase Setup)
+## Directory Structure
 
-### Automated Launch (All Services)
-A single command boots the entire stack:
+```
+minor-project/
+├── backend/                       # Python 3.12 FastAPI backend
+│   ├── agents/                    # Multi-agent implementations (Discovery, Extraction, Critic, Matching)
+│   ├── routes/                    # API routes (pipeline, resume, seeds, feedback)
+│   ├── storage/                   # SQLite database persistence & fingerprint deduplication
+│   ├── config.py                  # Application settings & OpenRouter configuration
+│   ├── main.py                    # FastAPI entrypoint & CORS setup
+│   ├── requirements.txt           # Python dependencies
+│   └── .env                       # Backend API keys (Firecrawl, OpenRouter)
+├── src/                           # Unified React frontend
+│   ├── components/                # UI primitives, layout shells, modals
+│   ├── contexts/                  # Local auth & theme stores
+│   ├── pages/
+│   │   └── dashboard/
+│   │       ├── Pathfinder.tsx     # AI Job Matcher mission control (/app/pathfinder)
+│   │       ├── Startups.tsx       # Curated startup database
+│   │       ├── Resumes.tsx        # Typst PDF resume builder
+│   │       └── ATScore.tsx        # ATS resume checker
+│   └── services/                  # Pipeline SSE client & API helpers
+├── docs/
+│   └── architecture.excalidraw    # Visual system architecture diagram
+├── package.json                   # Frontend dependencies & scripts
+├── start.sh                       # Single-command runner for all services
+└── README.md                      # Documentation
+```
+
+---
+
+## Getting Started
+
+### One-Command Launch (Recommended)
 ```bash
 ./start.sh
 ```
 
-This starts:
 - **Pathfinder Dashboard**: [http://localhost:5173](http://localhost:5173) (or `/app/pathfinder`)
-- **Scraper / Matcher UI**: [http://localhost:3001](http://localhost:3001)
 - **FastAPI API & Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
 
----
+### Manual Setup
 
-### Manual Launch (Separate Terminals)
-
-#### 1. Scraper Backend (Python 3.12 FastAPI)
+#### 1. Backend (FastAPI)
 ```bash
-cd scraper
+cd backend
+python3.12 -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
 uvicorn backend.main:app --reload --port 8000
 ```
 
-#### 2. Pathfinder Dashboard (React + Vite)
+#### 2. Frontend (Vite + React)
 ```bash
-cd otter
 bun install
 bun run dev
 ```
 
-#### 3. AI Matcher UI (Next.js 15)
-```bash
-cd scraper/frontend
-pnpm install
-pnpm dev -p 3001
-```
-
 ---
 
-## Environment Configuration
+## Live Presentation Flow
 
-Sample templates are provided as `.env.example` in each folder:
-
-### `scraper/.env`
-```env
-FIRECRAWL_API_KEY=fc-...
-OPENROUTER_API_KEY=sk-or-v1-...
-```
-
-### `otter/.env`
-```env
-VITE_SUPABASE_URL=https://...supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGci...
-VITE_OPENROUTER_API_KEY=sk-or-v1-...
-```
-
----
-
-## Demonstration Script for Presentation
-
-1. **Open the Agentic Pipeline**: Navigate to `http://localhost:3001` (or `http://localhost:5173/app/pathfinder`).
-2. **Upload a Candidate Resume**: Select a student resume PDF (or click and paste a software engineering resume).
-3. **Select a Career Portal Seed**: Pick from pre-seeded verified portals (e.g. *OpenAI*, *Wellfound*, *Stripe*).
-4. **Run Live Agents**: Click **Run Pipeline** and demonstrate:
-   - **Discovery Agent**: Scrapes the portal live and announces discovered posting URLs.
-   - **Extraction Agent**: Streams job cards as they are parsed with skills and work modes.
-   - **Critic Agent**: Audits and verifies details against source markdown.
-   - **Matching Agent**: Produces ranked score rings with full explanatory reasoning on candidate fit.
+1. Open [http://localhost:5173/app](http://localhost:5173/app). Notice that it immediately loads with zero login required.
+2. Under **Source Portal**, choose one of the quick pills (e.g. `OpenAI`, `Stripe`, or `Wellfound`).
+3. Under **Resume**, click `+ load sample resume` to load an instant engineering profile (or drop a candidate PDF).
+4. Click **RUN PIPELINE**:
+   - Watch the **Agent Stepper** cycle live: Discovery → Extraction → Critic → Matching.
+   - Monitor the **Live Terminal Log** streaming real-time Server-Sent Events.
+   - Review the resulting **Job Cards** with animated fit score rings, qualitative reason quotes, and skill chips.
