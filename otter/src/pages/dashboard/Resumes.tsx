@@ -58,7 +58,7 @@ export function Resumes() {
             name: "Modern Professional",
             description: "Clean and modern resume template perfect for tech roles",
             typst_template: `// Basic template placeholder\n#set page(paper: "us-letter", margin: 1in)\n#set text(font: "Linux Libertine", size: 11pt)\n\n= {firstName} {lastName}\n#link("mailto:{email}")[{email}] | {phone}\n\n== Education\n{education}\n\n== Skills\n{skills}\n\n== Experience\n{experience_years} years of experience`,
-            category: "modern",
+            category: "professional",
             is_active: true,
             usage_count: 0,
             created_at: new Date().toISOString(),

@@ -11,11 +11,8 @@ import {
 import { Helmet } from "react-helmet";
 import { scoreResumeATS } from "@/services/geminiService";
 import { PageHeader } from "@/components/ui/page-header";
-import { MOCK_USER } from "@/utils/mockUser";
 
 export default function ATScore() {
-  // Using mock user for development
-  const user = MOCK_USER;
   const [atsFile, setAtsFile] = useState<File | null>(null);
   const [isScoring, setIsScoring] = useState(false);
   const [atsScores, setAtsScores] = useState<{

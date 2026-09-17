@@ -39,7 +39,14 @@ export async function recordFeedback(postingId: string, action: "save" | "apply"
   });
 }
 
-type SSEHandler = (event: string, data: any) => void;
+export type SSEPayload = {
+  message?: string;
+  count?: number;
+  ranked?: Ranked[];
+  [key: string]: unknown;
+};
+
+type SSEHandler = (event: string, data: SSEPayload | string) => void;
 
 export async function streamPipeline(
   careersUrl: string,

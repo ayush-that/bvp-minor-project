@@ -49,8 +49,8 @@ export default function Home() {
     try {
       setResumeName(file.name);
       setResume(await uploadResume(file));
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -59,15 +59,16 @@ export default function Home() {
     setLoading(true); setErr(null); setPostings([]); setRanked([]); setStage("starting");
     try {
       await streamPipeline(careersUrl, resume || null, 10, (ev, data) => {
-        if (ev === "stage") setStage(data.message);
-        if (ev === "discovered") setStage(`Discovered ${data.count} postings`);
-        if (ev === "posting") setPostings((cur) => [...cur, data]);
-        if (ev === "ranked") setRanked(data.ranked);
-        if (ev === "done") setStage(data.message);
-        if (ev === "error" || ev === "extract_error") setErr(`${ev}: ${JSON.stringify(data)}`);
+        const payload = typeof data === "object" && data !== null ? data : {};
+        if (ev === "stage" && payload.message) setStage(payload.message);
+        if (ev === "discovered" && typeof payload.count === "number") setStage(`Discovered ${payload.count} postings`);
+        if (ev === "posting") setPostings((cur) => [...cur, payload as unknown as Posting]);
+        if (ev === "ranked" && Array.isArray(payload.ranked)) setRanked(payload.ranked);
+        if (ev === "done" && payload.message) setStage(payload.message);
+        if (ev === "error" || ev === "extract_error") setErr(`${ev}: ${typeof data === "string" ? data : JSON.stringify(data)}`);
       });
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }

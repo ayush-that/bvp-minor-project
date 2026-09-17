@@ -32,8 +32,8 @@ class Settings(BaseSettings):
     firecrawl_timeout: int = 60
     
     # Legacy model IDs used by scraper_service.py. Valid OpenRouter slugs.
-    openai_model_extract: str = "openai/gpt-4o-mini"
-    openai_model_match: str = "openai/gpt-4o-mini"
+    openai_model_extract: str = "google/gemini-2.5-flash-lite"
+    openai_model_match: str = "google/gemini-2.5-flash"
 
     # Multi-provider agent keys (retained for compatibility; unused now that all
     # traffic is routed through OpenRouter).
@@ -44,11 +44,11 @@ class Settings(BaseSettings):
     # OpenRouter endpoint (OpenAI-compatible)
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
-    # Per-agent model selection — OpenRouter namespaced IDs (April 2026 frontier)
-    discovery_model: str = "google/gemini-3.1-flash-lite-preview"
-    extraction_model: str = "openai/gpt-5.4-mini"
-    critic_model: str = "anthropic/claude-haiku-4.5"
-    matching_model: str = "anthropic/claude-sonnet-4.6"
+    # Per-agent model selection — Google Gemini Flash models via OpenRouter (fast, cheap, top results)
+    discovery_model: str = "google/gemini-2.5-flash-lite"
+    extraction_model: str = "google/gemini-2.5-flash-lite"
+    critic_model: str = "google/gemini-2.5-flash-lite"
+    matching_model: str = "google/gemini-2.5-flash"
 
     # SQLite
     sqlite_path: str = "./pathfinder.db"

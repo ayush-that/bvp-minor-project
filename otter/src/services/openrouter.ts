@@ -16,7 +16,7 @@ export async function openrouterChat(opts: {
 
   const {
     prompt,
-    model = "google/gemini-3.1-flash-lite-preview",
+    model = "google/gemini-2.5-flash-lite",
     temperature = 0.3,
     maxTokens = 2048,
   } = opts;
@@ -63,7 +63,7 @@ export async function openrouterChatWithPDF(opts: {
     prompt,
     pdfBase64,
     filename = "resume.pdf",
-    model = "google/gemini-3.1-flash-lite-preview",
+    model = "google/gemini-2.5-flash",
     temperature = 0.3,
     maxTokens = 2048,
   } = opts;

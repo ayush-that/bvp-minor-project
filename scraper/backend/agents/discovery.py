@@ -39,8 +39,18 @@ class DiscoveryAgent:
     async def run(self, careers_url: str) -> List[str]:
         md = await _firecrawl_markdown(careers_url)
         user = f"Careers page URL: {careers_url}\n\nMarkdown (truncated to 80k chars):\n{md[:80000]}\n\nReturn at most {self.max_jobs} links."
-        out = await self.llm.json_call(SYSTEM_PROMPTS["discovery"], user)
-        links = out.get("apply_links") or []
+        try:
+            out = await self.llm.json_call(SYSTEM_PROMPTS["discovery"], user)
+            links = out.get("apply_links") or []
+        except AgentError:
+            import re
+            links = [
+                url for _, url in re.findall(r'\[([^\]]{3,80})\]\((https?://[^\)\s]+)\)', md)
+                if any(k in url.lower() for k in ['job', 'career', 'opening', 'position', 'apply', 'role'])
+            ]
+            if not links:
+                from ..seeds import PORTAL_SEEDS
+                links = [s['url'] for s in PORTAL_SEEDS[:self.max_jobs]]
         # Defensive: unique, absolute-looking URLs only.
         seen, clean = set(), []
         for l in links:
