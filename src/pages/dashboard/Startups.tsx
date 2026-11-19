@@ -296,6 +296,15 @@ export function Startups() {
       />
 
       {/* search and filters - responsive layout */}
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-[2px] border border-primary/20 bg-primary/5 p-4">
+        <div>
+          <p className="font-medium">Discover companies beyond the directory</p>
+          <p className="text-sm text-muted-foreground">Search live company data, then find relevant people at those employers.</p>
+        </div>
+        <Button onClick={() => navigate(`/app/research?${new URLSearchParams({ kind: "companies", q: searchQuery })}`)}>
+          Search live companies
+        </Button>
+      </div>
       <div className="space-y-4 mb-6">
         {/* search bar and sort - same row */}
         <div className="flex gap-3">

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Helmet } from "react-helmet";
+import { Link } from "react-router-dom";
 import {
   Compass,
   Upload,
@@ -16,11 +17,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { MOCK_USER } from "@/utils/mockUser";
 import {
   fetchSeeds,
   uploadResume,
   streamPipeline,
   recordFeedback,
+  fetchPostings,
+  rematchPostings,
   type Posting,
   type Ranked,
   type Seed,
@@ -139,7 +143,7 @@ function ScoreRing({ score }: { score: number }) {
   const color =
     s >= 70 ? "text-emerald-500" : s >= 40 ? "text-primary" : "text-foreground/40";
   return (
-    <div className="relative h-20 w-20 shrink-0">
+    <div className="relative h-20 w-20 shrink-0" role="img" aria-label={`${Math.round(s)} percent fit`}>
       <svg className="h-20 w-20 -rotate-90" viewBox="0 0 72 72">
         <circle
           cx="36"
@@ -191,6 +195,10 @@ function EventLogLine({ ev, data }: { ev: string; data: any }) {
         return data.message;
       case "discovered":
         return `${data.count} posting link${data.count === 1 ? "" : "s"} discovered`;
+      case "agent":
+        return `${data.stage}: ${data.status}${data.completed !== undefined ? ` (${data.completed} completed, ${data.failed} failed)` : ` · ${data.apply_link}`}`;
+      case "audit":
+        return `source audit: ${data.status} · ${data.issues?.join("; ") || "no issues found"}`;
       case "posting":
         return `${data.job_title || "posting"} @ ${data.company || "?"}`;
       case "extract_skip":
@@ -246,6 +254,7 @@ export function Pathfinder() {
   const [resume, setResume] = useState("");
   const [resumeName, setResumeName] = useState("");
   const [resumeUploading, setResumeUploading] = useState(false);
+  const [loadingPostings, setLoadingPostings] = useState(true);
 
   const [postings, setPostings] = useState<Posting[]>([]);
   const [ranked, setRanked] = useState<Ranked[]>([]);
@@ -271,6 +280,21 @@ export function Pathfinder() {
     fetchSeeds()
       .then(setSeeds)
       .catch((e) => setSeedsError(e.message));
+    let active = true;
+    fetchPostings()
+      .then((saved) => {
+        if (active) {
+          setPostings(saved);
+          if (saved.length) setStage(`Restored ${saved.length} saved jobs. Rank them with your current resume.`);
+        }
+      })
+      .catch((e) => { if (active) setError(e.message); })
+      .finally(() => { if (active) setLoadingPostings(false); });
+    loadProfileResume(false);
+    return () => {
+      active = false;
+      abortRef.current?.abort();
+    };
   }, []);
 
   useEffect(() => {
@@ -294,14 +318,33 @@ export function Pathfinder() {
 
   async function handleFile(file: File) {
     setResumeUploading(true);
-    setResumeName(file.name);
     try {
-      setResume(await uploadResume(file));
+      changeResume(await uploadResume(file), file.name);
     } catch (e: any) {
       setError(e.message);
-      setResumeName("");
     } finally {
       setResumeUploading(false);
+    }
+  }
+
+  function changeResume(text: string, name: string) {
+    setResume(text.slice(0, 12000));
+    setResumeName(name);
+    setRanked([]);
+    setWarning(null);
+    setAgentStates((a) => ({ ...a, matching: "idle" }));
+  }
+
+  function loadProfileResume(showMissing = true) {
+    try {
+      const profile = JSON.parse(localStorage.getItem(`user-profile-${MOCK_USER.id}`) || "null");
+      if (typeof profile?.resume_text === "string" && profile.resume_text.trim()) {
+        changeResume(profile.resume_text.slice(0, 12000), "Saved profile resume");
+      } else if (showMissing) {
+        setError("Save your resume in Profile first, or upload one here.");
+      }
+    } catch {
+      setError("The saved profile could not be read. Open Profile and save it again.");
     }
   }
 
@@ -325,29 +368,20 @@ export function Pathfinder() {
       if (data.stage === "discovery") {
         setAgentStates((a) => ({ ...a, discovery: "running" }));
       }
-      if (data.stage === "matching") {
-        setAgentStates((a) => ({
-          ...a,
-          extraction: "done",
-          critic: "done",
-          matching: "running",
-        }));
-      }
+      if (data.stage === "matching") setAgentStates((a) => ({ ...a, matching: "running" }));
+    }
+    if (ev === "agent" && (data.stage === "extraction" || data.stage === "critic")) {
+      setAgentStates((a) => ({ ...a, [data.stage]: data.status }));
     }
     if (ev === "discovered") {
       setStage(`Discovered ${data.count} postings`);
       setAgentStates((a) => ({
         ...a,
         discovery: "done",
-        extraction: data.count ? "running" : a.extraction,
-        critic: data.count ? "running" : a.critic,
       }));
     }
     if (ev === "posting") {
-      setPostings((cur) => [...cur, data as Posting]);
-    }
-    if (ev === "extracted") {
-      setAgentStates((a) => ({ ...a, extraction: "done", critic: "done" }));
+      setPostings((cur) => [...cur.filter((p) => p.id !== data.id), data as Posting]);
     }
     if (ev === "warning") {
       setWarning(data.message as string);
@@ -388,28 +422,53 @@ export function Pathfinder() {
         careersUrl,
         resume: resume || null,
         maxJobs,
-        onEvent: handleEvent,
+        onEvent: (event, data) => { if (!ctrl.signal.aborted) handleEvent(event, data); },
         signal: ctrl.signal,
       });
     } catch (e: any) {
       if (e.name !== "AbortError") setError(e.message);
     } finally {
-      setIsRunning(false);
+      if (abortRef.current === ctrl) setIsRunning(false);
+    }
+  }
+
+  async function rerank() {
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+    setIsRunning(true);
+    setError(null);
+    setWarning(null);
+    setRanked([]);
+    resetAgents();
+    handleEvent("stage", { stage: "matching", message: "Ranking saved jobs, no scraping required" });
+    try {
+      const result = await rematchPostings(resume, visible.map((p) => p.id), ctrl.signal);
+      if (result.warning) handleEvent("warning", { message: result.warning });
+      handleEvent("ranked", result);
+      handleEvent("done", { message: `Ranked ${result.ranked.length} saved jobs with the current resume` });
+    } catch (e: any) {
+      if (e.name !== "AbortError") handleEvent("error", { where: "matching", detail: e.message });
+    } finally {
+      if (abortRef.current === ctrl) setIsRunning(false);
     }
   }
 
   function stop() {
     abortRef.current?.abort();
+    abortRef.current = null;
     setIsRunning(false);
     setStage("stopped");
+    setAgentStates((states) => Object.fromEntries(
+      Object.entries(states).map(([id, state]) => [id, state === "running" ? "idle" : state])
+    ) as Record<AgentId, AgentState>);
   }
 
   async function dismiss(id: string) {
-    setDismissed((s) => new Set(s).add(id));
     try {
       await recordFeedback(id, "dismiss");
-    } catch {
-      // best-effort — the card is already hidden locally
+      setDismissed((s) => new Set(s).add(id));
+    } catch (e: any) {
+      setError(e.message);
     }
   }
 
@@ -601,8 +660,7 @@ export function Pathfinder() {
                 <button
                   type="button"
                   onClick={() => {
-                    setResume(SAMPLE_TECH_RESUME);
-                    setResumeName("Ayush_Singh_Resume.txt");
+                    changeResume(SAMPLE_TECH_RESUME, "Sample resume (demonstration data)");
                   }}
                   disabled={isRunning}
                   className="text-[10px] text-primary hover:underline font-medium cursor-pointer"
@@ -611,6 +669,25 @@ export function Pathfinder() {
                   + load sample resume
                 </button>
               </div>
+              <button
+                type="button"
+                onClick={() => loadProfileResume()}
+                disabled={isRunning || resumeUploading}
+                className="mt-2 text-xs text-primary hover:underline disabled:opacity-50"
+              >
+                Use my saved Profile resume
+              </button>
+              <textarea
+                aria-label="Candidate resume"
+                value={resume}
+                onChange={(e) => changeResume(e.target.value, "Edited resume")}
+                placeholder="Or paste your resume here. Include education, skills and project or work experience."
+                disabled={isRunning || resumeUploading}
+                maxLength={12000}
+                rows={4}
+                className="mt-2 w-full border border-foreground/15 rounded-[2px] bg-background p-2 text-xs"
+              />
+              <p className="text-[11px] text-foreground/50">Up to 12,000 characters. Changing the resume clears earlier fit scores.</p>
             </div>
 
             <div className="flex gap-2">
@@ -627,7 +704,7 @@ export function Pathfinder() {
               ) : (
                 <Button
                   onClick={run}
-                  disabled={!careersUrl}
+                  disabled={!careersUrl || resumeUploading || loadingPostings}
                   className="w-full h-11 rounded-[2px]"
                   style={{ fontFamily: "JetBrains Mono, monospace" }}
                 >
@@ -636,6 +713,17 @@ export function Pathfinder() {
                 </Button>
               )}
             </div>
+            <Button
+              onClick={rerank}
+              variant="outline"
+              disabled={isRunning || resumeUploading || loadingPostings || !resume.trim() || !visible.length}
+              className="w-full rounded-[2px]"
+            >
+              Rank these {visible.length || "saved"} jobs with this resume
+            </Button>
+            <p className="text-[11px] text-foreground/50">
+              {loadingPostings ? "Loading saved jobs…" : "Jobs persist in this local workspace. Ranking reuses them without crawling again. Reload to restore up to 50 recent jobs."}
+            </p>
             {stage && (
               <div
                 className="text-[11px] text-foreground/60 truncate"
@@ -657,7 +745,7 @@ export function Pathfinder() {
               className="text-[10px] uppercase tracking-wider text-amber-600 mb-1"
               style={{ fontFamily: "JetBrains Mono, monospace" }}
             >
-              matching agent — insufficient resume
+              matching agent — notice
             </div>
             <div className="text-foreground/80">{warning}</div>
           </div>
@@ -764,6 +852,29 @@ export function Pathfinder() {
                             ))}
                           </div>
                         )}
+                        <div className="mt-3 space-y-2 text-xs text-foreground/60">
+                          {p.source_url && (
+                            <a href={p.source_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                              View discovery source
+                            </a>
+                          )}
+                          {p.audit ? (
+                            <details className="border-t border-foreground/10 pt-2">
+                              <summary className="cursor-pointer">
+                                Source audit: {p.audit.status === "verified" ? "no issues found" : p.audit.status}
+                                {Object.keys(p.audit.changes).length > 0 && ` (${Object.keys(p.audit.changes).length} fields changed)`}
+                              </summary>
+                              <ul className="mt-2 list-disc pl-4 space-y-1">
+                                {p.audit.issues.map((issue, index) => <li key={index}>{issue}</li>)}
+                              </ul>
+                              {Object.entries(p.audit.changes).map(([field, change]) => (
+                                <p key={field} className="mt-1 break-words">
+                                  <strong>{field.replace(/_/g, " ")}</strong>: {JSON.stringify(change.before)} → {JSON.stringify(change.after)}
+                                </p>
+                              ))}
+                            </details>
+                          ) : <p>Source audit not recorded for this older posting.</p>}
+                        </div>
                       </div>
 
                       <div className="flex flex-col items-center justify-between gap-3">
@@ -778,6 +889,13 @@ export function Pathfinder() {
                           </div>
                         )}
                         <div className="flex flex-col gap-1.5 w-full">
+                          {p.company && (
+                            <Button asChild variant="outline" size="sm" className="h-8 rounded-[2px] w-full">
+                              <Link to={`/app/research?${new URLSearchParams({ kind: "people", company: p.company, role: p.job_title || "" })}`}>
+                                Find people
+                              </Link>
+                            </Button>
+                          )}
                           <Button
                             asChild
                             size="sm"
@@ -790,7 +908,7 @@ export function Pathfinder() {
                               href={p.apply_link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              onClick={() => recordFeedback(p.id, "apply")}
+                              onClick={() => { void recordFeedback(p.id, "apply").catch((e) => setError(e.message)); }}
                             >
                               apply
                               <ExternalLink className="ml-1.5 h-3 w-3" />
@@ -798,6 +916,7 @@ export function Pathfinder() {
                           </Button>
                           <Button
                             onClick={() => dismiss(p.id)}
+                            disabled={isRunning}
                             variant="ghost"
                             size="sm"
                             className="h-7 rounded-[2px] text-[11px] text-foreground/50 hover:text-destructive"

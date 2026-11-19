@@ -11,6 +11,8 @@ from .routes import pipeline as pipeline_routes
 from .routes import resume as resume_routes
 from .routes import seeds as seeds_routes
 from .routes import feedback as feedback_routes
+from .routes import postings as postings_routes
+from .routes import context as context_routes
 from .config import get_settings
 from .storage import get_db
 
@@ -54,6 +56,8 @@ app.include_router(pipeline_routes.router, prefix="/api", tags=["pipeline"])
 app.include_router(resume_routes.router, prefix="/api", tags=["resume"])
 app.include_router(seeds_routes.router, prefix="/api", tags=["seeds"])
 app.include_router(feedback_routes.router, prefix="/api", tags=["feedback"])
+app.include_router(postings_routes.router, prefix="/api", tags=["postings"])
+app.include_router(context_routes.router, prefix="/api", tags=["context"])
 
 
 @app.get("/")

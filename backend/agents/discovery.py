@@ -1,4 +1,4 @@
-"""Discovery Agent — Gemini converts a careers page into a list of apply URLs.
+"""Discovery Agent converts a careers page into a list of apply URLs.
 
 Uses Firecrawl to fetch markdown, then the LLM to filter links.
 """
@@ -49,8 +49,7 @@ class DiscoveryAgent:
                 if any(k in url.lower() for k in ['job', 'career', 'opening', 'position', 'apply', 'role'])
             ]
             if not links:
-                from ..seeds import PORTAL_SEEDS
-                links = [s['url'] for s in PORTAL_SEEDS[:self.max_jobs]]
+                raise AgentError("Discovery is unavailable and no job links could be read from the selected portal")
         # Defensive: unique, absolute-looking URLs only.
         seen, clean = set(), []
         for l in links:

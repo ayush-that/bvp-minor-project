@@ -14,6 +14,7 @@ import {
   CheckCircle,
   Camera,
   Compass,
+  Users,
 } from "lucide-react";
 import ThemeToggle from "../ThemeToggle";
 import { NotesTab } from "../notes/NotesTab";
@@ -56,6 +57,7 @@ function DashboardUserAvatar({
 const navigation = [
   { name: "AI Job Matcher", href: "/app/pathfinder", icon: Compass },
   { name: "Startups", href: "/app/startups", icon: Building2 },
+  { name: "People & Companies", href: "/app/research", icon: Users },
   { name: "Email Templates", href: "/app/emails", icon: Mail },
   { name: "Profile", href: "/app/settings", icon: Settings },
   { name: "Resume Builder", href: "/app/resumes", icon: FileText },

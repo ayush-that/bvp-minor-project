@@ -5,7 +5,7 @@ PORTAL_SEEDS = [
     {"name": "Y Combinator", "url": "https://www.ycombinator.com/jobs"},
     {"name": "AngelList",    "url": "https://wellfound.com/startup-jobs"},
     {"name": "OpenAI",       "url": "https://openai.com/careers/search/"},
-    {"name": "Anthropic",    "url": "https://www.anthropic.com/careers"},
+    {"name": "Anthropic",    "url": "https://www.anthropic.com/careers/jobs"},
     {"name": "Stripe",       "url": "https://stripe.com/jobs/search"},
     {"name": "Netflix",      "url": "https://explore.jobs.netflix.net/careers"},
 ]

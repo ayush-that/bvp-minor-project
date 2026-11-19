@@ -64,45 +64,10 @@ export function StartupDetail() {
         .eq("startup_id", startupData.id)
         .order("created_at", { ascending: true });
 
-      // Fallback mock employees if RLS blocks the fetch
-      const mockEmployees =
-        employeesError || !employeesData || employeesData.length === 0
-          ? [
-              {
-                id: "mock-1",
-                startup_id: startupData.id,
-                name: "Rohan Sharma",
-                role: "Founder & CEO",
-                email: "rohan@example.com",
-                linkedin_url: "https://linkedin.com/in/rohansharma",
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                emails_sent: 0,
-              },
-              {
-                id: "mock-2",
-                startup_id: startupData.id,
-                name: "Priya Patel",
-                role: "Co-founder & CTO",
-                email: "priya@example.com",
-                linkedin_url: "https://linkedin.com/in/priyapatel",
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString(),
-                emails_sent: 0,
-              },
-            ]
-          : [];
-
       if (employeesError) {
-        console.warn("Failed to fetch employees (RLS policy):", employeesError);
-        console.log("Using fallback mock employees");
+        console.warn("Team directory unavailable:", employeesError);
       }
-
-      // format startup data
-      const finalEmployees =
-        employeesData && employeesData.length > 0
-          ? employeesData
-          : mockEmployees;
+      const finalEmployees = employeesError ? [] : employeesData || [];
 
       const formattedStartup: Startup = {
         ...startupData,
@@ -532,6 +497,20 @@ export function StartupDetail() {
               </div>
             </>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="mt-4">
+        <CardContent className="pt-5 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="font-medium">Find professionals at {startup.name}</h3>
+            <p className="text-sm text-muted-foreground">Search public professional profiles and prepare an introduction.</p>
+          </div>
+          <Button asChild variant="outline">
+            <Link to={`/app/research?${new URLSearchParams({ kind: "people", company: startup.name })}`}>
+              Search this company's people
+            </Link>
+          </Button>
         </CardContent>
       </Card>
 

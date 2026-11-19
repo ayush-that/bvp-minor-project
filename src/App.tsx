@@ -23,6 +23,7 @@ import HowToUse from "./pages/dashboard/HowToUse";
 import ATScore from "./pages/dashboard/ATScore";
 import LinkedInAnalyzer from "./pages/dashboard/LinkedInAnalyzer";
 import { Pathfinder } from "./pages/dashboard/Pathfinder";
+import { Research } from "./pages/dashboard/Research";
 // Public pages
 import PublicStartups from "./pages/PublicStartups";
 import PublicEmails from "./pages/PublicEmails";
@@ -172,6 +173,7 @@ function App() {
           <Route index element={<Pathfinder />} />
           <Route path="pathfinder" element={<Pathfinder />} />
           <Route path="matcher" element={<Pathfinder />} />
+          <Route path="research" element={<Research />} />
           <Route path="internships" element={<Internships />} />
           <Route path="startups" element={<Startups />} />
           <Route path="startups/:id" element={<StartupDetail />} />
@@ -202,6 +204,7 @@ function App() {
           <Route index element={<Pathfinder />} />
           <Route path="pathfinder" element={<Pathfinder />} />
           <Route path="matcher" element={<Pathfinder />} />
+          <Route path="research" element={<Research />} />
           <Route path="internships" element={<Internships />} />
           <Route path="startups" element={<Startups />} />
           <Route path="startups/:id" element={<StartupDetail />} />

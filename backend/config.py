@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     
     # Server Configuration
     host: str = "0.0.0.0"
-    port: int = 8000
+    port: int = 8001
     debug: bool = True
     
     # CORS Configuration
@@ -40,6 +40,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     gemini_api_key: str = ""
     openrouter_api_key: str = ""
+    context_dev_api_key: str = ""
 
     # OpenRouter endpoint (OpenAI-compatible)
     openrouter_base_url: str = "https://openrouter.ai/api/v1"

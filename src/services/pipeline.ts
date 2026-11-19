@@ -10,6 +10,12 @@ export type Posting = {
   key_skills?: string[];
   description_summary?: string;
   apply_link: string;
+  source_url?: string;
+  audit?: {
+    status: "verified" | "corrected" | "unavailable" | "unresolved";
+    issues: string[];
+    changes: Record<string, { before: unknown; after: unknown }>;
+  };
 };
 
 export type Ranked = { id: string; score: number; reason: string };
@@ -17,13 +23,36 @@ export type Seed = { name: string; url: string };
 
 const API =
   (import.meta.env.VITE_PATHFINDER_API as string | undefined) ||
-  "http://localhost:8000";
+  "";
 
 export async function fetchSeeds(): Promise<Seed[]> {
   const r = await fetch(`${API}/api/seeds`);
   if (!r.ok) throw new Error(`seeds fetch failed: ${r.status}`);
   const j = await r.json();
   return j.seeds as Seed[];
+}
+
+export async function fetchPostings(): Promise<Posting[]> {
+  const r = await fetch(`${API}/api/postings`);
+  if (!r.ok) throw new Error(`Saved jobs could not be loaded (${r.status}).`);
+  return (await r.json()).postings;
+}
+
+export async function rematchPostings(resume: string, ids: string[], signal: AbortSignal): Promise<{
+  ranked: Ranked[];
+  warning: string | null;
+}> {
+  const r = await fetch(`${API}/api/postings/match`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ resume, posting_ids: ids }),
+    signal,
+  });
+  if (!r.ok) {
+    const body = await r.json().catch(() => ({}));
+    throw new Error(typeof body.detail === "string" ? body.detail : `Ranking failed (${r.status}).`);
+  }
+  return r.json();
 }
 
 export async function uploadResume(file: File): Promise<string> {
@@ -42,11 +71,12 @@ export async function recordFeedback(
   postingId: string,
   action: "save" | "apply" | "dismiss" | "view"
 ) {
-  await fetch(`${API}/api/feedback/${encodeURIComponent(postingId)}`, {
+  const r = await fetch(`${API}/api/feedback/${encodeURIComponent(postingId)}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ action }),
   });
+  if (!r.ok) throw new Error(`Could not save ${action} (${r.status}). Please retry.`);
 }
 
 type SSEHandler = (event: string, data: any) => void;
@@ -94,11 +124,8 @@ export async function streamPipeline(opts: {
         else if (line.startsWith("data:")) dataRaw += line.slice(5).trim();
       }
       if (!dataRaw) continue;
-      try {
-        onEvent(event, JSON.parse(dataRaw));
-      } catch {
-        onEvent(event, dataRaw);
-      }
+      const data = JSON.parse(dataRaw);
+      onEvent(event, data);
     }
   }
 }

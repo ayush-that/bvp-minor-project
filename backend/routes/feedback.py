@@ -17,5 +17,7 @@ class FeedbackBody(BaseModel):
 async def record(posting_id: str, body: FeedbackBody):
     if body.action not in ALLOWED:
         raise HTTPException(400, f"action must be one of {ALLOWED}")
+    if not await get_db().get_postings([posting_id]):
+        raise HTTPException(404, "Posting not found")
     await get_db().record_feedback(posting_id, body.action)
     return {"ok": True}

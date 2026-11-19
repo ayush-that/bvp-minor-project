@@ -33,6 +33,12 @@ CREATE TABLE IF NOT EXISTS feedback (
 );
 
 CREATE INDEX IF NOT EXISTS idx_postings_fp ON postings(fingerprint);
+
+CREATE TABLE IF NOT EXISTS context_cache (
+    cache_key TEXT PRIMARY KEY,
+    payload TEXT NOT NULL,
+    expires_at REAL NOT NULL
+);
 """
 
 
@@ -60,11 +66,25 @@ class Database:
         fp = fingerprint(job)
         pid = fp  # use fingerprint as id for simplicity
         async with aiosqlite.connect(self.path) as db:
+            existing = await db.execute_fetchall(
+                "SELECT id, fingerprint FROM postings WHERE apply_link = ? LIMIT 1",
+                (job.get("apply_link", ""),),
+            )
+            if existing:
+                pid, fp = existing[0]
             await db.execute(
                 """
                 INSERT INTO postings (id, fingerprint, apply_link, job_title, company, location, compensation, key_skills, raw, source_url, created_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(fingerprint) DO NOTHING
+                ON CONFLICT(fingerprint) DO UPDATE SET
+                    apply_link=excluded.apply_link,
+                    job_title=excluded.job_title,
+                    company=excluded.company,
+                    location=excluded.location,
+                    compensation=excluded.compensation,
+                    key_skills=excluded.key_skills,
+                    raw=excluded.raw,
+                    source_url=excluded.source_url
                 """,
                 (
                     pid,
@@ -87,9 +107,39 @@ class Database:
         async with aiosqlite.connect(self.path) as db:
             db.row_factory = aiosqlite.Row
             rows = await db.execute_fetchall(
-                "SELECT * FROM postings ORDER BY created_at DESC LIMIT ?", (limit,)
+                """SELECT * FROM postings WHERE id NOT IN (
+                    SELECT posting_id FROM feedback WHERE action = 'dismiss'
+                ) ORDER BY created_at DESC LIMIT ?""", (limit,)
             )
         return [self._row_to_dict(r) for r in rows]
+
+    async def get_postings(self, ids: list[str]) -> list[dict]:
+        if not ids:
+            return []
+        placeholders = ",".join("?" for _ in ids)
+        async with aiosqlite.connect(self.path) as db:
+            db.row_factory = aiosqlite.Row
+            rows = await db.execute_fetchall(
+                f"SELECT * FROM postings WHERE id IN ({placeholders})", ids
+            )
+        return [self._row_to_dict(r) for r in rows]
+
+    async def get_context_cache(self, key: str, now: float) -> Optional[dict]:
+        async with aiosqlite.connect(self.path) as db:
+            rows = await db.execute_fetchall(
+                "SELECT payload, expires_at FROM context_cache WHERE cache_key = ? AND expires_at > ?",
+                (key, now),
+            )
+        return {"payload": json.loads(rows[0][0]), "expires_at": rows[0][1]} if rows else None
+
+    async def set_context_cache(self, key: str, payload: dict, expires_at: float) -> None:
+        async with aiosqlite.connect(self.path) as db:
+            await db.execute(
+                "INSERT INTO context_cache (cache_key, payload, expires_at) VALUES (?, ?, ?) "
+                "ON CONFLICT(cache_key) DO UPDATE SET payload=excluded.payload, expires_at=excluded.expires_at",
+                (key, json.dumps(payload), expires_at),
+            )
+            await db.commit()
 
     async def record_feedback(self, posting_id: str, action: str) -> None:
         async with aiosqlite.connect(self.path) as db:
@@ -116,9 +166,8 @@ class Database:
         d = dict(r)
         if d.get("key_skills"):
             d["key_skills"] = json.loads(d["key_skills"])
-        if d.get("raw"):
-            d["raw"] = json.loads(d["raw"])
-        return d
+        raw = json.loads(d.pop("raw") or "{}")
+        return {**raw, **d}
 
 
 _db: Optional[Database] = None

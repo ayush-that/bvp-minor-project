@@ -38,26 +38,27 @@ class LLM:
         if not self.settings.openrouter_api_key:
             raise AgentError("OPENROUTER_API_KEY is not configured")
         url = f"{self.settings.openrouter_base_url.rstrip('/')}/chat/completions"
-        async with httpx.AsyncClient(timeout=120) as c:
-            r = await c.post(
-                url,
-                headers={
-                    "Authorization": f"Bearer {self.settings.openrouter_api_key}",
-                    "Content-Type": "application/json",
-                },
-                json={
-                    "model": self.model,
-                    "response_format": {"type": "json_object"},
-                    "messages": [
-                        {"role": "system", "content": system},
-                        {"role": "user", "content": user},
-                    ],
-                },
-            )
-            try:
+        try:
+            async with httpx.AsyncClient(timeout=120) as c:
+                r = await c.post(
+                    url,
+                    headers={
+                        "Authorization": f"Bearer {self.settings.openrouter_api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": self.model,
+                        "response_format": {"type": "json_object"},
+                        "messages": [
+                            {"role": "system", "content": system},
+                            {"role": "user", "content": user},
+                        ],
+                    },
+                )
                 r.raise_for_status()
-            except httpx.HTTPStatusError as e:
-                raise AgentError(
-                    f"openrouter HTTP {e.response.status_code} for {self.model}: {e.response.text[:300]}"
-                ) from e
-            return r.json()["choices"][0]["message"]["content"]
+                content = r.json()["choices"][0]["message"]["content"]
+                if not isinstance(content, str) or not content.strip():
+                    raise AgentError("Provider returned no text")
+                return content
+        except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError) as e:
+            raise AgentError(f"Provider request failed for {self.model}") from e

@@ -1,7 +1,8 @@
-"""Matching Agent — Claude Sonnet ranks postings against a resume with reasoning."""
+"""Rank postings against a resume with validated scores and explanations."""
 from __future__ import annotations
 
 import json
+import math
 import re
 from typing import List, Optional, Tuple
 
@@ -62,19 +63,33 @@ class MatchingAgent:
             "<RESUME>\n" + resume.strip()[:12000] + "\n</RESUME>\n\n"
             "<POSTINGS>\n" + json.dumps(slim, indent=2) + "\n</POSTINGS>"
         )
-        try:
-            out = await self.llm.json_call(SYSTEM_PROMPTS["matching"], user)
-        except AgentError:
-            # Graceful: return neutral scores so the UI still shows postings.
-            stub = [{"id": p["id"], "score": 50, "reason": "matcher unavailable"} for p in postings]
-            return stub, None
+        if not postings:
+            return [], None
+        out = await self.llm.json_call(SYSTEM_PROMPTS["matching"], user)
+        if not isinstance(out, dict):
+            raise AgentError("Matching response must be an object")
 
         warning = out.get("warning")
         ranked = out.get("ranked") or []
         valid_ids = {p["id"] for p in postings}
-        cleaned = [r for r in ranked if r.get("id") in valid_ids]
-        missing = valid_ids - {r["id"] for r in cleaned}
-        for mid in missing:
-            cleaned.append({"id": mid, "score": 0, "reason": "not evaluated"})
+        cleaned = []
+        seen = set()
+        if not isinstance(ranked, list):
+            raise AgentError("Matching response must include ranked postings")
+        for r in ranked:
+            if not isinstance(r, dict):
+                raise AgentError("Malformed ranking")
+            pid, score, reason = r.get("id"), r.get("score"), r.get("reason")
+            if (
+                not isinstance(pid, str) or pid not in valid_ids or pid in seen
+                or isinstance(score, bool) or not isinstance(score, (int, float))
+                or not math.isfinite(score) or not 0 <= score <= 100
+                or not isinstance(reason, str) or not reason.strip()
+            ):
+                raise AgentError("Invalid posting ID, score or explanation in matching response")
+            seen.add(pid)
+            cleaned.append({"id": pid, "score": score, "reason": reason})
+        if seen != valid_ids:
+            raise AgentError("Matching response omitted postings")
         cleaned.sort(key=lambda r: -float(r.get("score", 0)))
-        return cleaned, warning
+        return cleaned, warning if isinstance(warning, str) else None

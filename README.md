@@ -68,18 +68,17 @@ npm run dev
 bun run dev
 ```
 
-- **Pathfinder Dashboard**: [http://localhost:5173](http://localhost:5173) (or `/app/pathfinder`)
-- **FastAPI API & Docs**: [http://localhost:8000/docs](http://localhost:8000/docs)
+- **Pathfinder Dashboard**: [http://localhost:3000](http://localhost:3000) (or `/app/pathfinder`)
+- **FastAPI API & Docs**: [http://localhost:8001/docs](http://localhost:8001/docs)
 
 ### Manual Setup
 
 #### 1. Backend (FastAPI)
 ```bash
-cd backend
-python3.12 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn backend.main:app --reload --port 8000
+python3.12 -m venv backend/.venv
+backend/.venv/bin/pip install -r backend/requirements.txt
+# Populate backend/.env using backend/.env.example as a guide.
+backend/.venv/bin/python -m backend.run
 ```
 
 #### 2. Frontend (Vite + React)
@@ -92,10 +91,39 @@ bun run dev
 
 ## Live Presentation Flow
 
-1. Open [http://localhost:5173/app](http://localhost:5173/app). Notice that it immediately loads with zero login required.
+1. Open [http://localhost:3000/app](http://localhost:3000/app). Notice that it immediately loads with zero login required.
 2. Under **Source Portal**, choose one of the quick pills (e.g. `OpenAI`, `Stripe`, or `Wellfound`).
 3. Under **Resume**, click `+ load sample resume` to load an instant engineering profile (or drop a candidate PDF).
 4. Click **RUN PIPELINE**:
    - Watch the **Agent Stepper** cycle live: Discovery → Extraction → Critic → Matching.
    - Monitor the **Live Terminal Log** streaming real-time Server-Sent Events.
    - Review the resulting **Job Cards** with animated fit score rings, qualitative reason quotes, and skill chips.
+
+
+## Company and people discovery
+
+Open `/app/research`, or choose **Find people** on a matched job. Search companies
+by name or description, then use **Find people** to prepare a search for that
+employer. The startup directory and startup detail pages also link to this flow.
+
+The backend uses `CONTEXT_DEV_API_KEY` in `backend/.env` for Context.dev. The key
+is never sent to the browser. Search uses fast mode: people pages cost 10 credits
+and company pages cost 2 credits. An identical query, country and cursor is
+cached in SQLite for 24 hours. Nothing searches automatically when opening a
+page. Additional pages require an explicit click.
+
+People results contain public professional profiles, not email addresses. Add
+a resume, choose **Generate outreach draft**, review and edit the result, then
+copy it. Draft generation uses the configured OpenRouter model. The research
+page does not send messages or update email-sent counters.
+
+The development frontend runs on port **3000** and proxies `/api` to the local
+backend on **8001**. Leave `VITE_PATHFINDER_API` empty for same-origin access,
+including when opening the VPS frontend from another device.
+
+Validate the integration with real provider calls (at most one people page and
+one company page, 12 Context credits; cached repeats cost no additional credits):
+
+```bash
+backend/.venv/bin/python scripts/verify_context.py
+```
